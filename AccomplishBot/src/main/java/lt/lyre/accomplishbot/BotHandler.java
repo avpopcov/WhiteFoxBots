@@ -1,5 +1,6 @@
 package lt.lyre.accomplishbot;
 
+import lt.lyre.accomplishbot.models.User;
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Message;
@@ -19,6 +20,12 @@ import java.io.InvalidObjectException;
 public class BotHandler extends TelegramLongPollingBot {
     private static final String BOT_LOG_TAG = BotConfig.BOT_USERNAME + "_Log_Tag";
     private static final String WELCOME_MESSAGE = "Welcome to sample Lyre Calc Bot! Please input mathematical expression to keep you going.";
+
+    private MongoDbConnection mongo;
+
+    public BotHandler() {
+        mongo = new MongoDbConnection();
+    }
 
     @Override
     public String getBotToken() {
@@ -48,6 +55,14 @@ public class BotHandler extends TelegramLongPollingBot {
 
     private void handleIncomingMessage(Message message) throws InvalidObjectException {
         if (message.getText().equals("/start")) {
+            if (mongo.shouldCreateUserById(message.getFrom().getId())) {
+                User user = new User();
+                user.setTelegramId(message.getFrom().getId());
+                user.setUserName(message.getFrom().getUserName());
+
+                mongo.insertUser(user);
+            }
+
             sendWelcomeMessage(message.getChatId().toString(), message.getMessageId(), null);
         } else {
             sendMessage(message.getChatId().toString(), message.getMessageId(), message.getText());
