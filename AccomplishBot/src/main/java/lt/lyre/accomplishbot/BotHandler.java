@@ -1,4 +1,4 @@
-package lt.lyre;
+package lt.lyre.accomplishbot;
 
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
@@ -16,7 +16,7 @@ import java.io.InvalidObjectException;
 /**
  * Created by Dmitrij on 2016-06-18.
  */
-public class CalculatorBotHandler extends TelegramLongPollingBot {
+public class BotHandler extends TelegramLongPollingBot {
     private static final String BOT_LOG_TAG = BotConfig.BOT_USERNAME + "_Log_Tag";
     private static final String WELCOME_MESSAGE = "Welcome to sample Lyre Calc Bot! Please input mathematical expression to keep you going.";
 

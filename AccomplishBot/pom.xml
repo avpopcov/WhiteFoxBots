@@ -22,7 +22,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>lt.lyre.Main</mainClass>
+                            <mainClass>lt.lyre.accomplishbot.Main</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

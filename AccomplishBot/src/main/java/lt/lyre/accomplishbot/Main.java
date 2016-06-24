@@ -1,4 +1,4 @@
-package lt.lyre;
+package lt.lyre.accomplishbot;
 
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.TelegramBotsApi;
@@ -12,7 +12,7 @@ public class Main {
 
         TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
         try {
-            telegramBotsApi.registerBot(new CalculatorBotHandler());
+            telegramBotsApi.registerBot(new BotHandler());
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
