@@ -1,6 +1,7 @@
 package lt.lyre.accomplishbot;
 
 import lt.lyre.accomplishbot.models.User;
+import lt.lyre.accomplishbot.models.UserQuery;
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Message;
@@ -54,15 +55,21 @@ public class BotHandler extends TelegramLongPollingBot {
     }
 
     private void handleIncomingMessage(Message message) throws InvalidObjectException {
+
+        User user = mongo.getUserByTelegramId(message.getFrom().getId());
+        if (user == null) {
+            User newUser = new User();
+            newUser.setTelegramId(message.getFrom().getId());
+            newUser.setUserName(message.getFrom().getUserName());
+
+            mongo.insertUser(newUser);
+
+            user = mongo.getUserByTelegramId(message.getFrom().getId());
+        }
+
+        mongo.insertUserQuery(new UserQuery(user.getTelegramId(), message.getText()));
+
         if (message.getText().equals("/start")) {
-            if (mongo.shouldCreateUserById(message.getFrom().getId())) {
-                User user = new User();
-                user.setTelegramId(message.getFrom().getId());
-                user.setUserName(message.getFrom().getUserName());
-
-                mongo.insertUser(user);
-            }
-
             sendWelcomeMessage(message.getChatId().toString(), message.getMessageId(), null);
         } else {
             sendMessage(message.getChatId().toString(), message.getMessageId(), message.getText());
