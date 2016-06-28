@@ -2,7 +2,6 @@ package lt.lyre.accomplishbot;
 
 import com.mongodb.*;
 import lt.lyre.accomplishbot.models.User;
-import lt.lyre.accomplishbot.models.UserQuery;
 
 import java.net.UnknownHostException;
 
@@ -34,12 +33,22 @@ public class MongoDbConnection {
         table.insert(document);
     }
 
-    public void insertUserQuery(UserQuery query) {
-        DBCollection table = getMongoDatabase().getCollection("user_queries");
-        BasicDBObject document = new BasicDBObject();
-        document.put("userQuery", query.getQuery());
-        document.put("telegramId", query.getTelegramId());
-        table.insert(document);
+    public void insertUserQuery(long telegramId, String command) {
+        DBCollection table = getMongoDatabase().getCollection("users");
+
+        BasicDBObject searchQuery = new BasicDBObject();
+        searchQuery.put("telegramId", telegramId);
+
+        DBCursor cursor = table.find(searchQuery);
+
+        if (!cursor.hasNext()) {
+            return;
+        }
+
+        DBObject userObject = cursor.next();
+        userObject.put("lastCommand", command);
+
+        table.update(searchQuery, userObject);
     }
 
     public User getUserByTelegramId(long telegramId) {

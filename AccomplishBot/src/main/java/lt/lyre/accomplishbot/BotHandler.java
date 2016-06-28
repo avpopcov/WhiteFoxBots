@@ -1,7 +1,6 @@
 package lt.lyre.accomplishbot;
 
 import lt.lyre.accomplishbot.models.User;
-import lt.lyre.accomplishbot.models.UserQuery;
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Message;
@@ -67,7 +66,7 @@ public class BotHandler extends TelegramLongPollingBot {
             user = mongo.getUserByTelegramId(message.getFrom().getId());
         }
 
-        mongo.insertUserQuery(new UserQuery(user.getTelegramId(), message.getText()));
+        mongo.insertUserQuery(user.getTelegramId(), message.getText());
 
         if (message.getText().equals("/start")) {
             sendWelcomeMessage(message.getChatId().toString(), message.getMessageId(), null);
