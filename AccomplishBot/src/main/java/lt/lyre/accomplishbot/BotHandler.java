@@ -74,7 +74,7 @@ public class BotHandler extends TelegramLongPollingBot {
             user = mongo.getUserByTelegramId(message.getFrom().getId());
         }
 
-        if (containsText(acceptableCommands, message.getText())) {
+        if (containsCommandPrefix(acceptableCommands, message.getText())) {
             mongo.logLastCommand(user.getTelegramId(), message.getText());
         }
 
@@ -85,9 +85,9 @@ public class BotHandler extends TelegramLongPollingBot {
         }
     }
 
-    private static boolean containsText(ArrayList<String> list, String text) {
+    private static boolean containsCommandPrefix(ArrayList<String> list, String text) {
         for (String item : list) {
-            if (text.contains(item)) {
+            if (text.startsWith(item)) {
                 return true;
             }
         }
