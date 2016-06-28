@@ -29,11 +29,14 @@ public class MongoDbConnection {
         BasicDBObject document = new BasicDBObject();
         document.put("userName", user.getUserName());
         document.put("telegramId", user.getTelegramId());
-        document.put("createdDate", user.getAdded());
+        document.put("userLanguage", user.getLanguage());
+        document.put("creationDate", user.getAdded());
+        document.put("textDelimiter", user.getDelimiter());
+
         table.insert(document);
     }
 
-    public void insertUserQuery(long telegramId, String command) {
+    public void logLastCommand(long telegramId, String command) {
         DBCollection table = getMongoDatabase().getCollection("users");
 
         BasicDBObject searchQuery = new BasicDBObject();
@@ -69,6 +72,12 @@ public class MongoDbConnection {
 
         user.setTelegramId(Long.valueOf(userObject.get("telegramId").toString()));
         user.setUserName(userObject.get("userName").toString());
+        user.setDelimiter(userObject.get("textDelimiter").toString());
+        user.setLanguage(userObject.get("userLanguage").toString());
+
+        if (userObject.get("lastCommand") != null) {
+            user.setLastCommand(userObject.get("lastCommand").toString());
+        }
 
         return user;
     }

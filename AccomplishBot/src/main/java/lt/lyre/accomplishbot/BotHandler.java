@@ -13,6 +13,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.InvalidObjectException;
+import java.util.ArrayList;
 
 /**
  * Created by Dmitrij on 2016-06-18.
@@ -20,6 +21,12 @@ import java.io.InvalidObjectException;
 public class BotHandler extends TelegramLongPollingBot {
     private static final String BOT_LOG_TAG = BotConfig.BOT_USERNAME + "_Log_Tag";
     private static final String WELCOME_MESSAGE = "Welcome to sample Lyre Calc Bot! Please input mathematical expression to keep you going.";
+
+    private final ArrayList<String> acceptableCommands = new ArrayList<String>() {{
+        add("/start");
+        add("/list");
+        add("/add");
+    }};
 
     private MongoDbConnection mongo;
 
@@ -60,19 +67,32 @@ public class BotHandler extends TelegramLongPollingBot {
             User newUser = new User();
             newUser.setTelegramId(message.getFrom().getId());
             newUser.setUserName(message.getFrom().getUserName());
+            newUser.setLastCommand(message.getText());
 
             mongo.insertUser(newUser);
 
             user = mongo.getUserByTelegramId(message.getFrom().getId());
         }
 
-        mongo.insertUserQuery(user.getTelegramId(), message.getText());
+        if (containsText(acceptableCommands, message.getText())) {
+            mongo.logLastCommand(user.getTelegramId(), message.getText());
+        }
 
         if (message.getText().equals("/start")) {
             sendWelcomeMessage(message.getChatId().toString(), message.getMessageId(), null);
         } else {
             sendMessage(message.getChatId().toString(), message.getMessageId(), message.getText());
         }
+    }
+
+    private static boolean containsText(ArrayList<String> list, String text) {
+        for (String item : list) {
+            if (text.contains(item)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void sendMessage(String chatId, Integer messageId, String expression) {
