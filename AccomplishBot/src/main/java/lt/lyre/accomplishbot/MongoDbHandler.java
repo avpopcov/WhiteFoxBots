@@ -4,6 +4,7 @@ import com.mongodb.MongoClient;
 import lt.lyre.accomplishbot.models.User;
 import lt.lyre.accomplishbot.models.UserList;
 import lt.lyre.accomplishbot.models.UserListItem;
+import lt.lyre.accomplishbot.utils.CollectionHelper;
 import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.Morphia;
 import org.mongodb.morphia.query.UpdateOperations;
@@ -33,9 +34,14 @@ public class MongoDbHandler {
     }
 
     public void insertListItem(String listName, List<String> items, long telegramId) {
-        UserList list = new UserList();
-        list.setTelegramId(telegramId);
-        list.setListName(listName);
+        UserList list = getUserListByName(listName); // For now, we wanna have UNO list
+
+        if (list == null) {
+            list = new UserList();
+            list.setTelegramId(telegramId);
+            list.setListName(listName);
+        }
+
         list.getItems().addAll(items.stream().map(item -> new UserListItem(item)).collect(Collectors.toList()));
 
         mongoDatastore.save(list);
@@ -56,10 +62,20 @@ public class MongoDbHandler {
                 .field("telegramId").equal(telegramId)
                 .asList();
 
-        if (result == null || result.isEmpty()) {
-            return null;
-        } else {
-            return result.stream().findAny().get();
-        }
+        return CollectionHelper.getGenericList(result);
+    }
+
+    public UserList getUserListByName(String userListName) {
+        List<UserList> result = mongoDatastore.createQuery(UserList.class)
+                .field("listName").equal(userListName)
+                .asList();
+
+        return CollectionHelper.getGenericList(result);
+    }
+
+    public List<UserList> getUserListByTelegramId(long telegramId) {
+        return mongoDatastore.createQuery(UserList.class)
+                .field("telegramId").equal(telegramId)
+                .asList();
     }
 }

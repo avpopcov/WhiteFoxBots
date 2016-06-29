@@ -1,6 +1,7 @@
 package lt.lyre.accomplishbot;
 
 import lt.lyre.accomplishbot.models.User;
+import lt.lyre.accomplishbot.models.UserList;
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Message;
@@ -14,6 +15,9 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.InvalidObjectException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by Dmitrij on 2016-06-18.
@@ -81,12 +85,39 @@ public class BotHandler extends TelegramLongPollingBot {
         if (message.getText().startsWith("/start")) {
             sendWelcomeMessage(message.getChatId().toString(), message.getMessageId(), null);
         } else if (message.getText().startsWith("/add")) {
-            mongo.insertListItem("test", new ArrayList<String>() {{
-                add("eggs");
-                add("bacon");
-                add("salad");
-            }}, message.getMessageId());
-            sendWelcomeMessage(message.getChatId().toString(), message.getMessageId(), null);
+            String text = message.getText();
+            String withoutCommand = "";
+
+            if (text.length() > 3) {
+                withoutCommand = message.getText().substring(4, message.getText().length());
+            }
+
+            List<String> listItem = Arrays.stream(withoutCommand.split(", ")).collect(Collectors.toList());
+
+            mongo.insertListItem("test", listItem, message.getFrom().getId());
+
+            String resultMessage = "";
+            if (listItem.size() > 1) {
+                resultMessage = String.format("Items: %s were added to the list.", listItem.stream().collect(Collectors.joining(", ")));
+            } else if (listItem.size() == 1) {
+                resultMessage = String.format("Item %s was added to the list.", listItem.stream().collect(Collectors.joining(", ")));
+            } else {
+                resultMessage = "No items were added";
+            }
+
+            sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
+
+        } else if (message.getText().startsWith("/list")) {
+            List<UserList> result = mongo.getUserListByTelegramId(message.getFrom().getId());
+
+            String messageText = "";
+            if (result == null || result.isEmpty()) {
+                messageText = String.format("Your lists are empty.");
+            } else {
+                messageText = result.stream().findAny().get().getItems().stream().map(item -> item.getItemName().toString()).collect(Collectors.joining(", "));
+            }
+
+            sendPlainMessage(message.getChatId().toString(), message.getMessageId(), messageText);
         } else {
             sendMessage(message.getChatId().toString(), message.getMessageId(), message.getText());
         }
@@ -100,6 +131,22 @@ public class BotHandler extends TelegramLongPollingBot {
         }
 
         return false;
+    }
+
+    private void sendPlainMessage(String chatId, Integer messageId, String expression) {
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.enableMarkdown(true);
+        sendMessage.setChatId(chatId);
+        sendMessage.setReplayToMessageId(messageId);
+
+        sendMessage.setText(expression);
+
+        try {
+            sendMessage(sendMessage);
+
+        } catch (TelegramApiException e) {
+            BotLogger.error(BOT_LOG_TAG, e);
+        }
     }
 
     private void sendMessage(String chatId, Integer messageId, String expression) {

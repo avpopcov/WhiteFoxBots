@@ -8,6 +8,9 @@ import org.mongodb.morphia.annotations.Property;
  */
 @Embedded
 public class UserListItem {
+    public UserListItem() {
+    }
+
     public UserListItem(String itemName) {
         this.itemName = itemName;
     }
