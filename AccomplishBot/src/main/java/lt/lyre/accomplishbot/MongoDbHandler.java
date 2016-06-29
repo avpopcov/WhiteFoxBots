@@ -1,6 +1,7 @@
 package lt.lyre.accomplishbot;
 
 import com.mongodb.MongoClient;
+import lt.lyre.accomplishbot.configuration.MongoDbConfig;
 import lt.lyre.accomplishbot.models.User;
 import lt.lyre.accomplishbot.models.UserList;
 import lt.lyre.accomplishbot.models.UserListItem;
@@ -17,16 +18,13 @@ import java.util.stream.Collectors;
  * Created by Dmitrij on 2016-06-24.
  */
 public class MongoDbHandler {
-    private static final String DATABASE = "accomplish_bot";
-    private static final String HOST = "192.168.1.132";
-    private static final int PORT = 27017;
     private Datastore mongoDatastore;
 
     public MongoDbHandler() {
         try {
             final Morphia morphia = new Morphia();
-            morphia.mapPackage("lt.lyre.accomplishbot.models");
-            mongoDatastore = morphia.createDatastore(new MongoClient(HOST, PORT), DATABASE);
+            morphia.mapPackage(MongoDbConfig.MAPPING_PACKAGE);
+            mongoDatastore = morphia.createDatastore(new MongoClient(MongoDbConfig.HOST, MongoDbConfig.PORT), MongoDbConfig.DATABASE);
             mongoDatastore.ensureIndexes();
         } catch (UnknownHostException e) {
             e.printStackTrace();

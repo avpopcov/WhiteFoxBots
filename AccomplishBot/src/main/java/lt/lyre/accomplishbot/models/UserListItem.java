@@ -28,11 +28,11 @@ public class UserListItem {
         this.itemName = itemName;
     }
 
-    public Boolean getFinished() {
+    public boolean isFinished() {
         return isFinished;
     }
 
-    public void setFinished(Boolean finished) {
+    public void setFinished(boolean finished) {
         isFinished = finished;
     }
 }

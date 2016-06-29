@@ -1,7 +1,9 @@
 package lt.lyre.accomplishbot;
 
+import lt.lyre.accomplishbot.configuration.BotConfig;
 import lt.lyre.accomplishbot.models.User;
 import lt.lyre.accomplishbot.models.UserList;
+import lt.lyre.accomplishbot.utils.StringHelper;
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Message;
@@ -78,35 +80,36 @@ public class BotHandler extends TelegramLongPollingBot {
             user = mongo.getUserByTelegramId(message.getFrom().getId());
         }
 
-        if (containsCommandPrefix(acceptableCommands, message.getText())) {
+        if (StringHelper.containsCommandPrefix(acceptableCommands, message.getText())) {
             mongo.logLastCommand(user, message.getText());
         }
 
         if (message.getText().startsWith("/start")) {
             sendWelcomeMessage(message.getChatId().toString(), message.getMessageId(), null);
         } else if (message.getText().startsWith("/add")) {
+            String delimiter = user.getDelimiter();
             String text = message.getText();
             String withoutCommand = "";
 
-            if (text.length() > 3) {
-                withoutCommand = message.getText().substring(4, message.getText().length());
+            if (text.length() > 4) {
+                withoutCommand = message.getText().substring(5, message.getText().length());
             }
 
-            List<String> listItem = Arrays.stream(withoutCommand.split(", ")).collect(Collectors.toList());
+            List<String> listItem = Arrays.stream(withoutCommand.split(delimiter)).filter(item -> !item.isEmpty()).collect(Collectors.toList());
 
             mongo.insertListItem("test", listItem, message.getFrom().getId());
 
-            String resultMessage = "";
+            String resultMessage;
+
             if (listItem.size() > 1) {
                 resultMessage = String.format("Items: %s were added to the list.", listItem.stream().collect(Collectors.joining(", ")));
             } else if (listItem.size() == 1) {
-                resultMessage = String.format("Item %s was added to the list.", listItem.stream().collect(Collectors.joining(", ")));
+                resultMessage = String.format("Item %s was added to the list.", listItem.stream().findFirst().get());
             } else {
                 resultMessage = "No items were added";
             }
 
             sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
-
         } else if (message.getText().startsWith("/list")) {
             List<UserList> result = mongo.getUserListByTelegramId(message.getFrom().getId());
 
@@ -121,16 +124,6 @@ public class BotHandler extends TelegramLongPollingBot {
         } else {
             sendMessage(message.getChatId().toString(), message.getMessageId(), message.getText());
         }
-    }
-
-    private static boolean containsCommandPrefix(ArrayList<String> list, String text) {
-        for (String item : list) {
-            if (text.startsWith(item)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private void sendPlainMessage(String chatId, Integer messageId, String expression) {

@@ -1,7 +1,9 @@
 package lt.lyre.accomplishbot.models;
 
 import org.bson.types.ObjectId;
-import org.mongodb.morphia.annotations.*;
+import org.mongodb.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Id;
+import org.mongodb.morphia.annotations.Property;
 
 import java.util.Date;
 
@@ -18,18 +20,32 @@ public class User {
 
     @Id
     private ObjectId id;
+
     @Property("telegramId")
     private long telegramId;
+
     @Property("userName")
     private String userName;
+
     @Property("textDelimiter")
     private String delimiter;
+
     @Property("userLanguage")
     private String language;
+
     @Property("lastCommandlastCommand")
     private String lastCommand;
+
     @Property("creationDate")
     private Date added;
+
+    public ObjectId getId() {
+        return id;
+    }
+
+    public void setId(ObjectId id) {
+        this.id = id;
+    }
 
     public long getTelegramId() {
         return telegramId;

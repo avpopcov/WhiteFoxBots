@@ -1,4 +1,4 @@
-package lt.lyre.accomplishbot;
+package lt.lyre.accomplishbot.configuration;
 
 /**
  * Created by Dmitrij on 2016-06-18.
