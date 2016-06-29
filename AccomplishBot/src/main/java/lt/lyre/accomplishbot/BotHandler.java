@@ -75,7 +75,7 @@ public class BotHandler extends TelegramLongPollingBot {
         }
 
         if (containsCommandPrefix(acceptableCommands, message.getText())) {
-            mongo.logLastCommand(user.getTelegramId(), message.getText());
+            mongo.logLastCommand(user, message.getText());
         }
 
         if (message.getText().startsWith("/start")) {

@@ -1,10 +1,14 @@
 package lt.lyre.accomplishbot.models;
 
+import org.bson.types.ObjectId;
+import org.mongodb.morphia.annotations.*;
+
 import java.util.Date;
 
 /**
  * Created by Dmitrij on 2016-06-24.
  */
+@Entity("users")
 public class User {
     public User() {
         added = new Date();
@@ -12,11 +16,19 @@ public class User {
         language = "English";
     }
 
+    @Id
+    private ObjectId id;
+    @Property("telegramId")
     private long telegramId;
+    @Property("userName")
     private String userName;
+    @Property("textDelimiter")
     private String delimiter;
+    @Property("userLanguage")
     private String language;
+    @Property("lastCommandlastCommand")
     private String lastCommand;
+    @Property("creationDate")
     private Date added;
 
     public long getTelegramId() {
