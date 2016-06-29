@@ -28,10 +28,10 @@ public class BotHandler extends TelegramLongPollingBot {
         add("/add");
     }};
 
-    private MongoDbConnection mongo;
+    private MongoDbHandler mongo;
 
     public BotHandler() {
-        mongo = new MongoDbConnection();
+        mongo = new MongoDbHandler();
     }
 
     @Override

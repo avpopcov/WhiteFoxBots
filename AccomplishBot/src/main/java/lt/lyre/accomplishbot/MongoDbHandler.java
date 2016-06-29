@@ -15,13 +15,13 @@ import java.util.stream.Collectors;
 /**
  * Created by Dmitrij on 2016-06-24.
  */
-public class MongoDbConnection {
+public class MongoDbHandler {
     private static final String DATABASE = "accomplish_bot";
     private static final String HOST = "192.168.1.132";
     private static final int PORT = 27017;
     private Datastore mongoDatastore;
 
-    public MongoDbConnection() {
+    public MongoDbHandler() {
         try {
             final Morphia morphia = new Morphia();
             morphia.mapPackage("lt.lyre.accomplishbot.models");
