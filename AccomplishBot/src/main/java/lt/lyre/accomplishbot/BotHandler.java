@@ -12,9 +12,6 @@ import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.logging.BotLogger;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import java.io.InvalidObjectException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -138,6 +135,19 @@ public class BotHandler extends TelegramLongPollingBot {
             } else {
                 resultMessage = String.format("Item %s was not found", itemToFinish);
             }
+
+            sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
+        } else if (message.getText().startsWith("/remove")) {
+            String text = message.getText();
+            String itemToRemove = "";
+
+            if (text.length() > 7) {
+                itemToRemove = text.substring(8, text.length());
+            }
+
+            mongo.removeListItem("test", itemToRemove, message.getFrom().getId());
+
+            String resultMessage = String.format("Item %s was removed successfully", itemToRemove);
 
             sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
         } else {
