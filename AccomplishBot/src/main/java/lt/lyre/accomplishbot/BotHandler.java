@@ -30,6 +30,9 @@ public class BotHandler extends TelegramLongPollingBot {
         add("/list");
         add("/add");
         add("/finish");
+        add("/settings");
+        add("/about");
+        add("/feedback");
     }};
 
     private MongoDbHandler mongo;
