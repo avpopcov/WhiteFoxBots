@@ -32,24 +32,20 @@ public class MongoDbHandler {
     }
 
     public boolean finishListItem(String listName, long telegramId) {
-        List<UserList> result = mongoDatastore.createQuery(UserList.class)
-                .field("telegramId").equal(telegramId)
-                .asList();
-        boolean successFlag = false;
-        for (UserList list : result) {
-            for (UserListItem listItem : list.getItems()) {
-                if (listItem.getItemName().equals(listName)) {
-                    listItem.setFinished(true);
-                    successFlag = true;
+        UpdateOperations<UserList> updateOperations = mongoDatastore.createUpdateOperations
+                (UserList.class).set("items.$.isFinished", true);
 
-                    break;
-                }
-            }
-        }
+        mongoDatastore.update(mongoDatastore.createQuery(UserList.class)
+                .filter("telegramId", telegramId)
+                .filter("items.itemName", listName), updateOperations);
 
-        mongoDatastore.save(result);
+        return true;
+    }
 
-        return successFlag;
+    public void removeListItem(String listName, long telegramId) {
+        mongoDatastore.delete(mongoDatastore.createQuery(UserList.class)
+                .filter("telegramId", telegramId)
+                .filter("items.itemName", listName));
     }
 
     public void insertListItem(String listName, List<String> items, long telegramId) {
