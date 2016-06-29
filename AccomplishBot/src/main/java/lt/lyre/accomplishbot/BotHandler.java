@@ -78,7 +78,14 @@ public class BotHandler extends TelegramLongPollingBot {
             mongo.logLastCommand(user.getTelegramId(), message.getText());
         }
 
-        if (message.getText().equals("/start")) {
+        if (message.getText().startsWith("/start")) {
+            sendWelcomeMessage(message.getChatId().toString(), message.getMessageId(), null);
+        } else if (message.getText().startsWith("/add")) {
+            mongo.insertListItem("test", new ArrayList<String>() {{
+                add("eggs");
+                add("bacon");
+                add("salad");
+            }}, message.getMessageId());
             sendWelcomeMessage(message.getChatId().toString(), message.getMessageId(), null);
         } else {
             sendMessage(message.getChatId().toString(), message.getMessageId(), message.getText());
