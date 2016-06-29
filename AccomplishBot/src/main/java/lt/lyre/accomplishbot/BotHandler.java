@@ -68,7 +68,6 @@ public class BotHandler extends TelegramLongPollingBot {
     }
 
     private void handleIncomingMessage(Message message) throws InvalidObjectException {
-
         User user = mongo.getUserByTelegramId(message.getFrom().getId());
         if (user == null) {
             User newUser = new User();
@@ -130,7 +129,7 @@ public class BotHandler extends TelegramLongPollingBot {
                 itemToFinish = text.substring(8, text.length());
             }
 
-            boolean isSuccessful = mongo.finishListItem(itemToFinish, message.getFrom().getId());
+            boolean isSuccessful = mongo.finishListItem("test", itemToFinish, message.getFrom().getId());
             String resultMessage;
 
             if (isSuccessful) {

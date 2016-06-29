@@ -31,21 +31,23 @@ public class MongoDbHandler {
         }
     }
 
-    public boolean finishListItem(String listName, long telegramId) {
+    public boolean finishListItem(String listName, String listItemName, long telegramId) {
         UpdateOperations<UserList> updateOperations = mongoDatastore.createUpdateOperations
                 (UserList.class).set("items.$.isFinished", true);
 
         mongoDatastore.update(mongoDatastore.createQuery(UserList.class)
                 .filter("telegramId", telegramId)
-                .filter("items.itemName", listName), updateOperations);
+                .filter("listName", listName)
+                .filter("items.itemName", listItemName), updateOperations);
 
         return true;
     }
 
-    public void removeListItem(String listName, long telegramId) {
+    public void removeListItem(String listName, String listItemName, long telegramId) {
         mongoDatastore.delete(mongoDatastore.createQuery(UserList.class)
                 .filter("telegramId", telegramId)
-                .filter("items.itemName", listName));
+                .filter("listName", listName)
+                .filter("items.itemName", listItemName));
     }
 
     public void insertListItem(String listName, List<String> items, long telegramId) {
@@ -80,9 +82,9 @@ public class MongoDbHandler {
         return CollectionHelper.getGenericList(result);
     }
 
-    public UserList getUserListByName(String userListName, long telegramId) {
+    public UserList getUserListByName(String listName, long telegramId) {
         List<UserList> result = mongoDatastore.createQuery(UserList.class)
-                .field("listName").equal(userListName)
+                .field("listName").equal(listName)
                 .field("telegramId").equal(telegramId)
                 .asList();
 
