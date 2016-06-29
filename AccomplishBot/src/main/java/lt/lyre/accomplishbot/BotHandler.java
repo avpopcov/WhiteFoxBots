@@ -32,6 +32,7 @@ public class BotHandler extends TelegramLongPollingBot {
         add("/start");
         add("/list");
         add("/add");
+        add("/finish");
     }};
 
     private MongoDbHandler mongo;
@@ -92,7 +93,7 @@ public class BotHandler extends TelegramLongPollingBot {
             String withoutCommand = "";
 
             if (text.length() > 4) {
-                withoutCommand = message.getText().substring(5, message.getText().length());
+                withoutCommand = text.substring(5, text.length());
             }
 
             List<String> listItem = Arrays.stream(withoutCommand.split(delimiter)).filter(item -> !item.isEmpty()).collect(Collectors.toList());
@@ -121,7 +122,28 @@ public class BotHandler extends TelegramLongPollingBot {
             }
 
             sendPlainMessage(message.getChatId().toString(), message.getMessageId(), messageText);
-        } else {
+        }
+        else if (message.getText().startsWith("/finish")) {
+            String text = message.getText();
+            String itemToFinish = "";
+
+            if (text.length() > 7) {
+                itemToFinish = text.substring(8, text.length());
+            }
+
+            boolean isSuccessful = mongo.finishListItem(itemToFinish, message.getFrom().getId());
+            String resultMessage;
+
+            if (isSuccessful) {
+                resultMessage = String.format("Items: %s was successfully finished", itemToFinish);
+
+            } else {
+                resultMessage = String.format("Item %s was not found", itemToFinish);
+            }
+
+            sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
+        }
+        else {
             sendMessage(message.getChatId().toString(), message.getMessageId(), message.getText());
         }
     }

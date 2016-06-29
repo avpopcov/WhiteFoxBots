@@ -31,6 +31,27 @@ public class MongoDbHandler {
         }
     }
 
+    public boolean finishListItem(String listName, long telegramId) {
+        List<UserList> result = mongoDatastore.createQuery(UserList.class)
+                .field("telegramId").equal(telegramId)
+                .asList();
+        boolean successFlag = false;
+        for (UserList list : result) {
+            for (UserListItem listItem : list.getItems()) {
+                if (listItem.getItemName().equals(listName)) {
+                    listItem.setFinished(true);
+                    successFlag = true;
+
+                    break;
+                }
+            }
+        }
+
+        mongoDatastore.save(result);
+
+        return successFlag;
+    }
+
     public void insertListItem(String listName, List<String> items, long telegramId) {
         UserList list = getUserListByName(listName); // For now, we wanna have UNO list
 
