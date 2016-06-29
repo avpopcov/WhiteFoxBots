@@ -53,7 +53,7 @@ public class MongoDbHandler {
     }
 
     public void insertListItem(String listName, List<String> items, long telegramId) {
-        UserList list = getUserListByName(listName); // For now, we wanna have UNO list
+        UserList list = getUserListByName(listName, telegramId); // For now, we wanna have UNO list
 
         if (list == null) {
             list = new UserList();
@@ -84,9 +84,10 @@ public class MongoDbHandler {
         return CollectionHelper.getGenericList(result);
     }
 
-    public UserList getUserListByName(String userListName) {
+    public UserList getUserListByName(String userListName, long telegramId) {
         List<UserList> result = mongoDatastore.createQuery(UserList.class)
                 .field("listName").equal(userListName)
+                .field("telegramId").equal(telegramId)
                 .asList();
 
         return CollectionHelper.getGenericList(result);
