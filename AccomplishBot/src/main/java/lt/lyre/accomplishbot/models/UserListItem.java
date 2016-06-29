@@ -17,6 +17,7 @@ public class UserListItem {
 
     @Property("itemName")
     private String itemName;
+
     @Property("isFinished")
     private boolean isFinished;
 

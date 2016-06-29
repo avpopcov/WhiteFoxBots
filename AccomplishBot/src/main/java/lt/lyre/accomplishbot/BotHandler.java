@@ -122,8 +122,7 @@ public class BotHandler extends TelegramLongPollingBot {
             }
 
             sendPlainMessage(message.getChatId().toString(), message.getMessageId(), messageText);
-        }
-        else if (message.getText().startsWith("/finish")) {
+        } else if (message.getText().startsWith("/finish")) {
             String text = message.getText();
             String itemToFinish = "";
 
@@ -142,9 +141,8 @@ public class BotHandler extends TelegramLongPollingBot {
             }
 
             sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
-        }
-        else {
-            sendMessage(message.getChatId().toString(), message.getMessageId(), message.getText());
+        } else {
+            sendPlainMessage(message.getChatId().toString(), message.getMessageId(), "Did you say: " + message.getText() + "?. Unknown command. Try a different one.");
         }
     }
 
@@ -164,42 +162,12 @@ public class BotHandler extends TelegramLongPollingBot {
         }
     }
 
-    private void sendMessage(String chatId, Integer messageId, String expression) {
-        SendMessage sendMessage = new SendMessage();
-        sendMessage.enableMarkdown(true);
-        sendMessage.setChatId(chatId);
-        sendMessage.setReplayToMessageId(messageId);
-
-        ScriptEngineManager mgr = new ScriptEngineManager();
-        ScriptEngine engine = mgr.getEngineByName("JavaScript");
-
-        try {
-            Object result = engine.eval(expression);
-
-            if (result != null) {
-                sendMessage.setText(String.valueOf(engine.eval(expression)));
-            } else {
-                sendMessage.setText(expression);
-            }
-
-        } catch (ScriptException e) {
-            e.printStackTrace();
-            sendMessage.setText("Did you say: " + expression + "?. Try again.");
-        }
-
-        try {
-            sendMessage(sendMessage);
-
-        } catch (TelegramApiException e) {
-            BotLogger.error(BOT_LOG_TAG, e);
-        }
-    }
-
     private void sendWelcomeMessage(String chatId, Integer messageId, ReplyKeyboardMarkup replyKeyboardMarkup) {
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableMarkdown(true);
         sendMessage.setChatId(chatId);
         sendMessage.setReplayToMessageId(messageId);
+
         if (replyKeyboardMarkup != null) {
             sendMessage.setReplayMarkup(replyKeyboardMarkup);
         }
