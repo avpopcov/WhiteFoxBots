@@ -1,14 +1,14 @@
 package lt.lyre.accomplishbot;
 
-import lt.lyre.accomplishbot.configuration.BotConfig;
-import lt.lyre.accomplishbot.models.User;
-import lt.lyre.accomplishbot.models.UserList;
-import lt.lyre.accomplishbot.utils.StringHelper;
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
+import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageReplyMarkup;
+import org.telegram.telegrambots.api.objects.CallbackQuery;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
+import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.logging.BotLogger;
 
@@ -17,6 +17,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import lt.lyre.accomplishbot.configuration.BotConfig;
+import lt.lyre.accomplishbot.models.User;
+import lt.lyre.accomplishbot.models.UserList;
+import lt.lyre.accomplishbot.models.UserListItem;
+import lt.lyre.accomplishbot.utils.StringHelper;
 
 /**
  * Created by Dmitrij on 2016-06-18.
@@ -62,8 +68,51 @@ public class BotHandler extends TelegramLongPollingBot {
                     BotLogger.severe(BOT_LOG_TAG, e);
                 }
             }
+
+            CallbackQuery query = update.getCallbackQuery();
+            if (query != null) {
+                handleIncomingQuery(query);
+            }
+
         } catch (Exception e) {
             BotLogger.error(BOT_LOG_TAG, e);
+        }
+    }
+
+    private void handleIncomingQuery(CallbackQuery query) {
+        Integer id = query.getFrom().getId();
+
+        String command = query.getData().split(" ")[0];
+        String item = query.getData().split(" ")[1];
+        String list = query.getData().split(" ")[2];
+
+        switch (command) {
+            case "finish":
+                mongo.finishListItem(list, item, id);
+                break;
+            case "redo":
+                mongo.redoListItem(list, item, id);
+                break;
+            case "modify":
+                // TODO: Implement modify list item feature.
+                break;
+            case "remove":
+                mongo.removeListItem(list, item, id);
+                break;
+        }
+
+
+        List<UserListItem> items = mongo.getUserListByTelegramId(id).stream().findAny().get().getItems();
+
+        EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
+        editMessageReplyMarkup.setChatId(query.getMessage().getChatId() + "");
+        editMessageReplyMarkup.setMessageId(query.getMessage().getMessageId());
+        editMessageReplyMarkup.setReplyMarkup(getMessageReplyMarkup(list, items));
+
+        try {
+            editMessageReplyMarkup(editMessageReplyMarkup);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
         }
     }
 
@@ -114,13 +163,17 @@ public class BotHandler extends TelegramLongPollingBot {
             List<UserList> result = mongo.getUserListByTelegramId(message.getFrom().getId());
 
             String messageText = "";
+            InlineKeyboardMarkup rk = null;
             if (result == null || result.isEmpty()) {
                 messageText = String.format("Your lists are empty.");
             } else {
-                messageText = result.stream().findAny().get().getItems().stream().map(item -> item.getItemName().toString()).collect(Collectors.joining(", "));
+                List<UserListItem> items = result.stream().findAny().get().getItems();
+                String listName = result.stream().findAny().get().getListName();
+                rk = getMessageReplyMarkup(listName, items);
+                messageText = "Your item list:";
             }
 
-            sendPlainMessage(message.getChatId().toString(), message.getMessageId(), messageText);
+            sendPlainMessage(message.getChatId().toString(), message.getMessageId(), messageText, rk);
         } else if (message.getText().startsWith("/finish")) {
             String text = message.getText();
             String itemToFinish = "";
@@ -158,12 +211,50 @@ public class BotHandler extends TelegramLongPollingBot {
         }
     }
 
+    private InlineKeyboardMarkup getMessageReplyMarkup(String listName, List<UserListItem> items) {
+        InlineKeyboardMarkup rk = new InlineKeyboardMarkup();
+
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        for (UserListItem item : items) {
+            List<InlineKeyboardButton> row = new ArrayList<>();
+
+            InlineKeyboardButton button = new InlineKeyboardButton();
+            button.setText(item.isFinished() ? "✅" : "▪");
+            // If task is finished, then clear it. Otherwise mark it as finished.
+            button.setCallbackData((item.isFinished() ? "redo " : "finish ") + item.getItemName()
+                + " " + listName);
+            row.add(button);
+
+            button = new InlineKeyboardButton();
+            button.setText(item.getItemName());
+            button.setCallbackData("modify " + item.getItemName() + " " + listName);
+            row.add(button);
+
+            button = new InlineKeyboardButton();
+            button.setText("\uD83D\uDDD1");
+            button.setCallbackData("remove " + item.getItemName() + " " + listName);
+            row.add(button);
+
+            rows.add(row);
+        }
+
+        rk.setKeyboard(rows);
+
+        return rk;
+    }
+
     private void sendPlainMessage(String chatId, Integer messageId, String expression) {
+        sendPlainMessage(chatId, messageId, expression, null);
+    }
+
+    private void sendPlainMessage(String chatId, Integer messageId, String expression,
+                                  InlineKeyboardMarkup replyKeyboardMarkup) {
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableMarkdown(true);
         sendMessage.setChatId(chatId);
         sendMessage.setReplayToMessageId(messageId);
-
+        sendMessage.setReplayMarkup(replyKeyboardMarkup);
         sendMessage.setText(expression);
 
         try {
