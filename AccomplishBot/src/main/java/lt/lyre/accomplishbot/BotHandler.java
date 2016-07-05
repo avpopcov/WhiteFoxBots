@@ -1,16 +1,19 @@
 package lt.lyre.accomplishbot;
 
 import java.io.InvalidObjectException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import org.apache.commons.lang3.StringUtils;
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
+import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageReplyMarkup;
+import org.telegram.telegrambots.api.objects.CallbackQuery;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
+import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.logging.BotLogger;
 
@@ -56,8 +59,51 @@ public class BotHandler extends TelegramLongPollingBot {
                     BotLogger.severe(BOT_LOG_TAG, e);
                 }
             }
+
+            CallbackQuery query = update.getCallbackQuery();
+            if (query != null) {
+                handleIncomingQuery(query);
+            }
+
         } catch (Exception e) {
             BotLogger.error(BOT_LOG_TAG, e);
+        }
+    }
+
+    private void handleIncomingQuery(CallbackQuery query) {
+        Integer id = query.getFrom().getId();
+
+        String command = query.getData().split(" ")[0];
+        String item = query.getData().split(" ")[1];
+        String list = query.getData().split(" ")[2];
+
+        switch (command) {
+            case "finish":
+                mongo.finishListItem(list, item, id);
+                break;
+            case "redo":
+                mongo.redoListItem(list, item, id);
+                break;
+            case "modify":
+                // TODO: Implement modify list item feature.
+                break;
+            case "remove":
+                mongo.removeListItem(list, item, id);
+                break;
+        }
+
+
+        List<UserListItem> items = mongo.getUserListByTelegramId(id).get(0).getItems();
+
+        EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
+        editMessageReplyMarkup.setChatId(query.getMessage().getChatId() + "");
+        editMessageReplyMarkup.setMessageId(query.getMessage().getMessageId());
+        editMessageReplyMarkup.setReplyMarkup(getMessageReplyMarkup(list, items));
+
+        try {
+            editMessageReplyMarkup(editMessageReplyMarkup);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
         }
     }
 
@@ -120,51 +166,20 @@ public class BotHandler extends TelegramLongPollingBot {
                     sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
                     break;
                 case CMD_LIST:
-                    List<UserList> result = mongo.getUserListByTelegramId(message.getFrom().getId());
+                   List<UserList> result = mongo.getUserListByTelegramId(message.getFrom().getId());
 
                     String messageText = "";
+                    InlineKeyboardMarkup rk = null;
                     if (result == null || result.isEmpty()) {
                         messageText = String.format("Your lists are empty.");
                     } else {
-                        // get longest item name for equal padding
-                        int maxItemLength = result.stream()
-                                .filter(userList -> userList.getItems() != null && !userList.getItems().isEmpty())
-                                .map(UserList::getItems).flatMap(List::stream)
-                                .mapToInt(item -> item.getItemName().length()).max().orElse(0) + 3;
-
-                        // get longest item list for equal item number padding
-                        int maxItemNumberLength = String.valueOf(
-                                result.stream()
-                                .filter(userList -> userList.getItems() != null && !userList.getItems().isEmpty())
-                                .mapToInt(userList -> userList.getItems().size())
-                                .max().orElse(0)
-                        ).length();
-                        
-                        //format pattern for the list, given item lengths
-                        String formatPattern = "%1$0" + maxItemNumberLength + "d" + ". %2$s (%3$1s)";
-                        BotLogger.debug(BOT_LOG_TAG, "Format String: " + formatPattern);
-                        
-                        // string for list of lists, separated by 2 newlines
-                        messageText = result.stream()
-                                .filter(userList -> userList.getItems() != null && !userList.getItems().isEmpty())
-                                .map(userList -> {
-                                    List<UserListItem> items = userList.getItems();
-                                    String itemsString = IntStream.range(0, items.size()).mapToObj(index -> {
-                                        String isDone = items.get(index).isFinished() ? "X" : " ";
-                                        String paddedItemName = StringUtils.rightPad(
-                                                items.get(index).getItemName(), maxItemLength, '.');
-                                        //index with +1 to avoid printing item 0
-                                        return String.format(formatPattern, 
-                                                index + 1, 
-                                                paddedItemName,
-                                                isDone);
-                                    }).collect(Collectors.joining(System.lineSeparator()));
-
-                                    return itemsString;
-                                }).collect(Collectors.joining(System.lineSeparator()));
+                        List<UserListItem> items = result.stream().findAny().get().getItems();
+                        String listName = result.stream().findAny().get().getListName();
+                        rk = getMessageReplyMarkup(listName, items);
+                        messageText = "Your item list:";
                     }
-
-                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), messageText);
+        
+                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), messageText, rk);
                     break;
                 case CMD_SETTINGS:
                     break;
@@ -185,12 +200,50 @@ public class BotHandler extends TelegramLongPollingBot {
         }
     }
 
+    private InlineKeyboardMarkup getMessageReplyMarkup(String listName, List<UserListItem> items) {
+        InlineKeyboardMarkup rk = new InlineKeyboardMarkup();
+
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        for (UserListItem item : items) {
+            List<InlineKeyboardButton> row = new ArrayList<>();
+
+            InlineKeyboardButton button = new InlineKeyboardButton();
+            button.setText(item.isFinished() ? "✅" : "▪");
+            // If task is finished, then clear it. Otherwise mark it as finished.
+            button.setCallbackData((item.isFinished() ? "redo " : "finish ") + item.getItemName()
+                + " " + listName);
+            row.add(button);
+
+            button = new InlineKeyboardButton();
+            button.setText(item.getItemName());
+            button.setCallbackData("modify " + item.getItemName() + " " + listName);
+            row.add(button);
+
+            button = new InlineKeyboardButton();
+            button.setText("\uD83D\uDDD1");
+            button.setCallbackData("remove " + item.getItemName() + " " + listName);
+            row.add(button);
+
+            rows.add(row);
+        }
+
+        rk.setKeyboard(rows);
+
+        return rk;
+    }
+
     private void sendPlainMessage(String chatId, Integer messageId, String expression) {
+        sendPlainMessage(chatId, messageId, expression, null);
+    }
+
+    private void sendPlainMessage(String chatId, Integer messageId, String expression,
+                                  InlineKeyboardMarkup replyKeyboardMarkup) {
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableMarkdown(true);
         sendMessage.setChatId(chatId);
         sendMessage.setReplayToMessageId(messageId);
-
+        sendMessage.setReplayMarkup(replyKeyboardMarkup);
         sendMessage.setText(expression);
 
         try {
