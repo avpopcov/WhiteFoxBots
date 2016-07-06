@@ -6,6 +6,8 @@ public enum BotCommands {
     
     CMD_START("/start")
     , CMD_LIST("/list")
+    , CMD_LISTS("/lists")
+    , CMD_ITEMS("/items")
     , CMD_ADD("/add")
     , CMD_FINISH("/finish")
     , CMD_SETTINGS("/settings")
