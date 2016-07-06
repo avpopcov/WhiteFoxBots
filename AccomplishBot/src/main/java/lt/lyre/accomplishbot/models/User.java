@@ -38,7 +38,7 @@ public class User {
     @Property("lastCommand")
     private String lastCommand;
 
-    @Reference("lists")
+    @Reference("currentList")
     private UserList currentList;
 
     @Property("creationDate")
