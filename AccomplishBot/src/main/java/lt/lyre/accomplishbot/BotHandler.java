@@ -210,7 +210,7 @@ public class BotHandler extends TelegramLongPollingBot {
             List<InlineKeyboardButton> row = new ArrayList<>();
 
             InlineKeyboardButton button = new InlineKeyboardButton();
-            button.setText(item.isFinished() ? "✅" : "▪");
+            button.setText(item.isFinished() ? "\u2705" : "\u25AA");
             // If task is finished, then clear it. Otherwise mark it as finished.
             button.setCallbackData((item.isFinished() ? "redo " : "finish ") + item.getItemName()
                 + " " + listName);
