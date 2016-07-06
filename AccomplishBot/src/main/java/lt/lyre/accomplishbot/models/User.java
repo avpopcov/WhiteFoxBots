@@ -6,6 +6,8 @@ import org.mongodb.morphia.annotations.Id;
 import org.mongodb.morphia.annotations.Property;
 import org.mongodb.morphia.annotations.Reference;
 
+import lt.lyre.accomplishbot.commands.BotCommands;
+
 import java.util.Date;
 
 /**
@@ -17,7 +19,7 @@ public class User {
         added = new Date();
         delimiter = ",";
         language = "English";
-        lastCommand = "/add";
+        lastCommand = BotCommands.CMD_ADD.getCommandString();
     }
 
     @Id

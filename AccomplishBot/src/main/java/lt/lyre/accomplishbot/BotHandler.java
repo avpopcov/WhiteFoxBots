@@ -120,7 +120,7 @@ public class BotHandler extends TelegramLongPollingBot {
             user = mongo.getUserByTelegramId(message.getFrom().getId());
         }
 
-        ParsedUserCommand parsedUserCommand = UserCommandParser.parseUserInput(message.getText(), user.getDelimiter());
+        ParsedUserCommand parsedUserCommand = UserCommandParser.parseUserInput(message.getText(), user);
         BotLogger.debug(BOT_LOG_TAG, "Parsed user command: \n" + parsedUserCommand);
         if (parsedUserCommand.getUserCommand() != null) {
             mongo.logLastCommand(user, message.getText());
