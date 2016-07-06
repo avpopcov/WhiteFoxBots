@@ -93,7 +93,7 @@ public class BotHandler extends TelegramLongPollingBot {
         }
 
 
-        List<UserListItem> items = mongo.getUserListByTelegramId(id).get(0).getItems();
+        List<UserListItem> items = mongo.getUserListsByTelegramId(id).get(0).getItems();
 
         EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
         editMessageReplyMarkup.setChatId(query.getMessage().getChatId() + "");
@@ -167,7 +167,7 @@ public class BotHandler extends TelegramLongPollingBot {
                     sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
                     break;
                 case CMD_LIST:
-                   List<UserList> result = mongo.getUserListByTelegramId(message.getFrom().getId());
+                   List<UserList> result = mongo.getUserListsByTelegramId(message.getFrom().getId());
 
                     String messageText = "";
                     InlineKeyboardMarkup rk = null;
