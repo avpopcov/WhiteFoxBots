@@ -138,8 +138,9 @@ public class BotHandler extends TelegramLongPollingBot {
                     break;
                 case CMD_ADD:
                     List<String> listItem = parsedUserCommand.getParameters();
+                    user.setCurrentList(mongo.insertListItem("test", listItem, message.getFrom().getId()));
 
-                    mongo.insertListItem("test", listItem, message.getFrom().getId());
+                    mongo.updateUser(user); // Let's update user with current list
 
                     if (listItem.size() > 1) {
                         resultMessage = String.format("Items: %s were added to the list.",

@@ -4,6 +4,7 @@ import org.bson.types.ObjectId;
 import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.Id;
 import org.mongodb.morphia.annotations.Property;
+import org.mongodb.morphia.annotations.Reference;
 
 import java.util.Date;
 
@@ -16,6 +17,7 @@ public class User {
         added = new Date();
         delimiter = ",";
         language = "English";
+        lastCommand = "/add";
     }
 
     @Id
@@ -33,8 +35,11 @@ public class User {
     @Property("userLanguage")
     private String language;
 
-    @Property("lastCommandlastCommand")
+    @Property("lastCommand")
     private String lastCommand;
+
+    @Reference("lists")
+    private UserList currentList;
 
     @Property("creationDate")
     private Date added;
@@ -85,6 +90,14 @@ public class User {
 
     public void setLastCommand(String lastCommand) {
         this.lastCommand = lastCommand;
+    }
+
+    public UserList getCurrentList() {
+        return currentList;
+    }
+
+    public void setCurrentList(UserList currentList) {
+        this.currentList = currentList;
     }
 
     public Date getAdded() {

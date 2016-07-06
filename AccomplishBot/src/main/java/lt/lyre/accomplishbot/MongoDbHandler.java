@@ -23,14 +23,10 @@ public class MongoDbHandler {
     private Datastore mongoDatastore;
 
     public MongoDbHandler() {
-        try {
-            final Morphia morphia = new Morphia();
-            morphia.mapPackage(MongoDbConfig.MAPPING_PACKAGE);
-            mongoDatastore = morphia.createDatastore(new MongoClient(MongoDbConfig.HOST, MongoDbConfig.PORT), MongoDbConfig.DATABASE);
-            mongoDatastore.ensureIndexes();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
+        final Morphia morphia = new Morphia();
+        morphia.mapPackage(MongoDbConfig.MAPPING_PACKAGE);
+        mongoDatastore = morphia.createDatastore(new MongoClient(MongoDbConfig.HOST, MongoDbConfig.PORT), MongoDbConfig.DATABASE);
+        mongoDatastore.ensureIndexes();
     }
 
     public boolean finishListItem(String listName, String listItemName, long telegramId) {
@@ -64,7 +60,7 @@ public class MongoDbHandler {
                 .filter("items.itemName", listItemName));
     }
 
-    public void insertListItem(String listName, List<String> items, long telegramId) {
+    public UserList insertListItem(String listName, List<String> items, long telegramId) {
         UserList list = getUserListByName(listName, telegramId); // For now, we wanna have UNO list
 
         if (list == null) {
@@ -76,9 +72,15 @@ public class MongoDbHandler {
         list.getItems().addAll(items.stream().map(item -> new UserListItem(item)).collect(Collectors.toList()));
 
         mongoDatastore.save(list);
+
+        return list;
     }
 
     public void insertUser(User user) {
+        mongoDatastore.save(user);
+    }
+
+    public void updateUser(User user) {
         mongoDatastore.save(user);
     }
 
