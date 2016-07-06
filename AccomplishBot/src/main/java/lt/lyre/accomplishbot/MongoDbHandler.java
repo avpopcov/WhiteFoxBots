@@ -1,20 +1,17 @@
 package lt.lyre.accomplishbot;
 
 import com.mongodb.MongoClient;
-
-import org.mongodb.morphia.Datastore;
-import org.mongodb.morphia.Morphia;
-import org.mongodb.morphia.query.UpdateOperations;
-
-import java.net.UnknownHostException;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import lt.lyre.accomplishbot.configuration.MongoDbConfig;
 import lt.lyre.accomplishbot.models.User;
 import lt.lyre.accomplishbot.models.UserList;
 import lt.lyre.accomplishbot.models.UserListItem;
 import lt.lyre.accomplishbot.utils.CollectionHelper;
+import org.mongodb.morphia.Datastore;
+import org.mongodb.morphia.Morphia;
+import org.mongodb.morphia.query.UpdateOperations;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by Dmitrij on 2016-06-24.
@@ -34,21 +31,21 @@ public class MongoDbHandler {
                 (UserList.class).set("items.$.isFinished", true);
 
         mongoDatastore.update(mongoDatastore.createQuery(UserList.class)
-            .filter("telegramId", telegramId)
-            .filter("listName", listName)
-            .filter("items.itemName", listItemName), updateOperations);
+                .filter("telegramId", telegramId)
+                .filter("listName", listName)
+                .filter("items.itemName", listItemName), updateOperations);
 
         return true;
     }
 
     public boolean redoListItem(String listName, String listItemName, long telegramId) {
         UpdateOperations<UserList> updateOperations = mongoDatastore.createUpdateOperations
-            (UserList.class).set("items.$.isFinished", false);
+                (UserList.class).set("items.$.isFinished", false);
 
         mongoDatastore.update(mongoDatastore.createQuery(UserList.class)
-            .filter("telegramId", telegramId)
-            .filter("listName", listName)
-            .filter("items.itemName", listItemName), updateOperations);
+                .filter("telegramId", telegramId)
+                .filter("listName", listName)
+                .filter("items.itemName", listItemName), updateOperations);
 
         return true;
     }
@@ -58,6 +55,18 @@ public class MongoDbHandler {
                 .filter("telegramId", telegramId)
                 .filter("listName", listName)
                 .filter("items.itemName", listItemName));
+    }
+
+    public void removeList(String listName, long telegramId) {
+        mongoDatastore.delete(mongoDatastore.createQuery(UserList.class)
+                .filter("telegramId", telegramId)
+                .filter("listName", listName));
+
+        User user = getUserByTelegramId(telegramId);
+
+        if (user != null) {
+            user.setCurrentList(getUserListsByTelegramId(telegramId).stream().findFirst().orElse(null));
+        }
     }
 
     public UserList insertListItem(String listName, List<String> items, long telegramId) {
@@ -74,6 +83,11 @@ public class MongoDbHandler {
         mongoDatastore.save(list);
 
         return list;
+    }
+
+    public void setCurrentList(User user, UserList list) {
+        user.setCurrentList(list);
+        mongoDatastore.save(user);
     }
 
     public void insertUser(User user) {
@@ -107,7 +121,7 @@ public class MongoDbHandler {
         return CollectionHelper.getGenericList(result);
     }
 
-    public List<UserList> getUserListByTelegramId(long telegramId) {
+    public List<UserList> getUserListsByTelegramId(long telegramId) {
         return mongoDatastore.createQuery(UserList.class)
                 .field("telegramId").equal(telegramId)
                 .asList();
