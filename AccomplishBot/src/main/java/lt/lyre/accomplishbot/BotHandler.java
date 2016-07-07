@@ -91,7 +91,26 @@ public class BotHandler extends TelegramLongPollingBot {
                 mongo.removeListItem(list, item, id);
                 break;
             case "select":
-                mongo.setCurrentList(mongo.getUserByTelegramId(id), mongo.getUserListByName(item, id));
+            case "unselect":
+                UserList selectedList = null;
+
+                if (command.equals("select")) {
+                    selectedList = mongo.getUserListByName(item, id);
+                }
+                mongo.setCurrentList(mongo.getUserByTelegramId(id), selectedList);
+
+                List<UserList> items = mongo.getUserListsByTelegramId(id);
+
+                EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
+                editMessageReplyMarkup.setChatId(query.getMessage().getChatId() + "");
+                editMessageReplyMarkup.setMessageId(query.getMessage().getMessageId());
+                editMessageReplyMarkup.setReplyMarkup(getUserListReplyMarkup(items));
+
+                try {
+                    editMessageReplyMarkup(editMessageReplyMarkup);
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
                 return;
         }
 
@@ -138,6 +157,7 @@ public class BotHandler extends TelegramLongPollingBot {
             String resultMessage;
             switch (command) {
                 case CMD_ABOUT:
+                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), "A set of programmers from Lyre Inc. made this. Be proud. Be grateful. Most of all be free.");
                     break;
                 case CMD_ADD:
                     List<String> listItem = parsedUserCommand.getParameters();
@@ -157,6 +177,7 @@ public class BotHandler extends TelegramLongPollingBot {
                     sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
                     break;
                 case CMD_FEEDBACK:
+                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), "feedback@lyre.lt");
                     break;
                 case CMD_FINISH:
 
@@ -228,6 +249,21 @@ public class BotHandler extends TelegramLongPollingBot {
             List<InlineKeyboardButton> row = new ArrayList<>();
 
             InlineKeyboardButton button = new InlineKeyboardButton();
+
+            boolean isSelected = false;
+
+            User user = mongo.getUserByTelegramId(item.getTelegramId());
+            if (user.getCurrentList() != null &&
+                    user.getCurrentList().getId().equals(item.getId())) {
+                isSelected = true;
+            }
+
+            button.setText(isSelected ? "\u2705" : "\u25AA");
+
+            button.setCallbackData((isSelected ? "unselect " : "select") + " " + item.getListName());
+            row.add(button);
+
+            button = new InlineKeyboardButton();
             button.setText(item.getListName());
             button.setCallbackData("select " + item.getListName());
             row.add(button);
