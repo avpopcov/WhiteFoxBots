@@ -96,7 +96,7 @@ public class BotHandler extends TelegramLongPollingBot {
                 EditMessageReplyMarkup emrm = new EditMessageReplyMarkup();
                 emrm.setChatId(query.getMessage().getChatId() + "");
                 emrm.setMessageId(query.getMessage().getMessageId());
-                emrm.setReplyMarkup(getMessageReplyMarkup(list, userListItems));
+                emrm.setReplyMarkup(getMessageReplyMarkup(item, userListItems));
 
                 try {
                     editMessageReplyMarkup(emrm);
@@ -129,7 +129,7 @@ public class BotHandler extends TelegramLongPollingBot {
         }
 
 
-        List<UserListItem> items = mongo.getUserListsByTelegramId(id).get(0).getItems();
+        List<UserListItem> items = mongo.getUserListByName(list, id).getItems();
 
         EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
         editMessageReplyMarkup.setChatId(query.getMessage().getChatId() + "");
