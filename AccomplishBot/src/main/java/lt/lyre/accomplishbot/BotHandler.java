@@ -90,6 +90,20 @@ public class BotHandler extends TelegramLongPollingBot {
             case "remove":
                 mongo.removeListItem(list, item, id);
                 break;
+            case "listItems":
+                List<UserListItem> userListItems = mongo.getUserListsByTelegramId(id).stream().filter(i -> i.getListName().equals(item)).findFirst().get().getItems();
+
+                EditMessageReplyMarkup emrm = new EditMessageReplyMarkup();
+                emrm.setChatId(query.getMessage().getChatId() + "");
+                emrm.setMessageId(query.getMessage().getMessageId());
+                emrm.setReplyMarkup(getMessageReplyMarkup(list, userListItems));
+
+                try {
+                    editMessageReplyMarkup(emrm);
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+                return;
             case "select":
             case "unselect":
                 UserList selectedList = null;
@@ -265,7 +279,7 @@ public class BotHandler extends TelegramLongPollingBot {
 
             button = new InlineKeyboardButton();
             button.setText(item.getListName());
-            button.setCallbackData("select " + item.getListName());
+            button.setCallbackData("listItems " + item.getListName());
             row.add(button);
 
             rows.add(row);
