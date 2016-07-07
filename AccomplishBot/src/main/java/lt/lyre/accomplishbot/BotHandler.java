@@ -164,7 +164,8 @@ public class BotHandler extends TelegramLongPollingBot {
             sendPlainMessage(message.getChatId().toString(), message.getMessageId(),
                     "Did you say: " + message.getText() + "?. Unknown command. Try a different one.");
         } else {
-            mongo.logLastCommand(user, command.getCommandString());
+            user.setLastCommand(command.getCommandString());
+            mongo.updateUser(user);
             
             String resultMessage;
             switch (command) {
