@@ -7,6 +7,7 @@ import lt.lyre.accomplishbot.models.UserList;
 import lt.lyre.accomplishbot.models.UserListItem;
 import lt.lyre.accomplishbot.utils.UserCommandParser;
 import lt.lyre.accomplishbot.utils.models.ParsedUserCommand;
+import org.bson.types.ObjectId;
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageReplyMarkup;
@@ -29,7 +30,7 @@ import java.util.stream.Collectors;
  */
 public class BotHandler extends TelegramLongPollingBot {
     private static final String BOT_LOG_TAG = BotConfig.BOT_USERNAME + "_Log_Tag";
-    private static final String WELCOME_MESSAGE = "Welcome to sample Lyre Calc Bot! Please input mathematical expression to keep you going.";
+    private static final String WELCOME_MESSAGE = "Welcome to AccomplishBot.";
 
     private MongoDbHandler mongo;
 
@@ -70,7 +71,7 @@ public class BotHandler extends TelegramLongPollingBot {
     }
 
     private void handleIncomingQuery(CallbackQuery query) {
-        Integer id = query.getFrom().getId();
+        Integer telegramId = query.getFrom().getId();
 
         String[] data = query.getData().split(" ");
         String command = data.length > 0 ? data[0] : null;
@@ -79,19 +80,19 @@ public class BotHandler extends TelegramLongPollingBot {
 
         switch (command) {
             case "finish":
-                mongo.finishListItem(list, item, id);
+                mongo.finishListItem(new ObjectId(list), new ObjectId(item), telegramId);
                 break;
             case "redo":
-                mongo.redoListItem(list, item, id);
+                mongo.redoListItem(new ObjectId(list), new ObjectId(item), telegramId);
                 break;
             case "modify":
                 // TODO: Implement modify list item feature.
                 break;
             case "remove":
-                mongo.removeListItem(list, item, id);
+                mongo.removeListItem(new ObjectId(list), new ObjectId(item), telegramId);
                 break;
             case "listItems":
-                List<UserListItem> userListItems = mongo.getUserListsByTelegramId(id).stream().filter(i -> i.getListName().equals(item)).findFirst().get().getItems();
+                List<UserListItem> userListItems = mongo.getUserListsByTelegramId(telegramId).stream().filter(i -> i.getId().toString().equals(item)).findFirst().get().getItems();
 
                 EditMessageReplyMarkup emrm = new EditMessageReplyMarkup();
                 emrm.setChatId(query.getMessage().getChatId() + "");
@@ -109,11 +110,11 @@ public class BotHandler extends TelegramLongPollingBot {
                 UserList selectedList = null;
 
                 if (command.equals("select")) {
-                    selectedList = mongo.getUserListByName(item, id);
+                    selectedList = mongo.getUserListById(new ObjectId(item), telegramId);
                 }
-                mongo.setCurrentList(mongo.getUserByTelegramId(id), selectedList);
+                mongo.setCurrentList(mongo.getUserByTelegramId(telegramId), selectedList);
 
-                List<UserList> items = mongo.getUserListsByTelegramId(id);
+                List<UserList> items = mongo.getUserListsByTelegramId(telegramId);
 
                 EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
                 editMessageReplyMarkup.setChatId(query.getMessage().getChatId() + "");
@@ -129,7 +130,7 @@ public class BotHandler extends TelegramLongPollingBot {
         }
 
 
-        List<UserListItem> items = mongo.getUserListByName(list, id).getItems();
+        List<UserListItem> items = mongo.getUserListById(new ObjectId(list), telegramId).getItems();
 
         EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
         editMessageReplyMarkup.setChatId(query.getMessage().getChatId() + "");
@@ -174,7 +175,9 @@ public class BotHandler extends TelegramLongPollingBot {
                     break;
                 case CMD_ADD:
                     List<String> listItem = parsedUserCommand.getParameters();
-                    user.setCurrentList(mongo.insertListItem("test", listItem, message.getFrom().getId()));
+
+                    UserList currentList = user.getCurrentList();
+                    user.setCurrentList(mongo.insertListItem(currentList == null ? new ObjectId() : currentList.getId(), listItem, message.getFrom().getId()));
 
                     mongo.updateUser(user); // Let's update user with current list
 
@@ -193,15 +196,14 @@ public class BotHandler extends TelegramLongPollingBot {
                     sendPlainMessage(message.getChatId().toString(), message.getMessageId(), "feedback@lyre.lt");
                     break;
                 case CMD_FINISH:
-
-                    String itemToFinish = parsedUserCommand.getParameters().stream().findFirst().orElse("");
-                    boolean isSuccessful = mongo.finishListItem("test", itemToFinish, message.getFrom().getId());
-                    if (isSuccessful) {
-                        resultMessage = String.format("Items: %s was successfully finished", itemToFinish);
-                    } else {
-                        resultMessage = String.format("Item %s was not found", itemToFinish);
-                    }
-                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
+//                    String itemToFinish = parsedUserCommand.getParameters().stream().findFirst().orElse("");
+//                    boolean isSuccessful = mongo.finishListItem("test", itemToFinish, message.getFrom().getId());
+//                    if (isSuccessful) {
+//                        resultMessage = String.format("Items: %s was successfully finished", itemToFinish);
+//                    } else {
+//                        resultMessage = String.format("Item %s was not found", itemToFinish);
+//                    }
+//                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
                     break;
                 case CMD_LISTS:
                     List<UserList> userLists = mongo.getUserListsByTelegramId(message.getFrom().getId());
@@ -227,8 +229,8 @@ public class BotHandler extends TelegramLongPollingBot {
                         messageText = String.format("Your lists are empty.");
                     } else {
                         List<UserListItem> items = result.stream().findAny().get().getItems();
-                        String listName = result.stream().findAny().get().getListName();
-                        rk = getMessageReplyMarkup(listName, items);
+                        String listId = result.stream().findAny().get().getId().toString();
+                        rk = getMessageReplyMarkup(listId, items);
                         messageText = "Your item list:";
                     }
 
@@ -237,14 +239,13 @@ public class BotHandler extends TelegramLongPollingBot {
                 case CMD_SETTINGS:
                     break;
                 case CMD_REMOVE:
-
-                    String itemToRemove = parsedUserCommand.getParameters().stream().findFirst().orElse("");
-
-                    mongo.removeListItem("test", itemToRemove, message.getFrom().getId());
-
-                    resultMessage = String.format("Item %s was removed successfully", itemToRemove);
-
-                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
+//                    String itemToRemove = parsedUserCommand.getParameters().stream().findFirst().orElse("");
+//
+//                    mongo.removeListItem("test", itemToRemove, message.getFrom().getId());
+//
+//                    resultMessage = String.format("Item %s was removed successfully", itemToRemove);
+//
+//                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
                     break;
                 case CMD_START:
                     sendWelcomeMessage(message.getChatId().toString(), message.getMessageId(), null);
@@ -273,12 +274,12 @@ public class BotHandler extends TelegramLongPollingBot {
 
             button.setText(isSelected ? "\u2705" : "\u25AA");
 
-            button.setCallbackData((isSelected ? "unselect " : "select") + " " + item.getListName());
+            button.setCallbackData((isSelected ? "unselect " : "select") + " " + item.getId());
             row.add(button);
 
             button = new InlineKeyboardButton();
             button.setText(item.getListName());
-            button.setCallbackData("listItems " + item.getListName());
+            button.setCallbackData("listItems " + item.getId());
             row.add(button);
 
             rows.add(row);
@@ -289,7 +290,7 @@ public class BotHandler extends TelegramLongPollingBot {
         return rk;
     }
 
-    private InlineKeyboardMarkup getMessageReplyMarkup(String listName, List<UserListItem> items) {
+    private InlineKeyboardMarkup getMessageReplyMarkup(String listId, List<UserListItem> items) {
         InlineKeyboardMarkup rk = new InlineKeyboardMarkup();
 
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
@@ -300,18 +301,18 @@ public class BotHandler extends TelegramLongPollingBot {
             InlineKeyboardButton button = new InlineKeyboardButton();
             button.setText(item.isFinished() ? "\u2705" : "\u25AA");
             // If task is finished, then clear it. Otherwise mark it as finished.
-            button.setCallbackData((item.isFinished() ? "redo " : "finish ") + item.getItemName()
-                    + " " + listName);
+            button.setCallbackData((item.isFinished() ? "redo " : "finish ") + item.getId()
+                    + " " + listId);
             row.add(button);
 
             button = new InlineKeyboardButton();
             button.setText(item.getItemName());
-            button.setCallbackData("modify " + item.getItemName() + " " + listName);
+            button.setCallbackData("modify " + item.getId() + " " + listId);
             row.add(button);
 
             button = new InlineKeyboardButton();
             button.setText("\uD83D\uDDD1");
-            button.setCallbackData("remove " + item.getItemName() + " " + listName);
+            button.setCallbackData("remove " + item.getId() + " " + listId);
             row.add(button);
 
             rows.add(row);

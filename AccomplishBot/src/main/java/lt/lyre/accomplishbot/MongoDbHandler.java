@@ -1,11 +1,13 @@
 package lt.lyre.accomplishbot;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import lt.lyre.accomplishbot.configuration.MongoDbConfig;
 import lt.lyre.accomplishbot.models.User;
 import lt.lyre.accomplishbot.models.UserList;
 import lt.lyre.accomplishbot.models.UserListItem;
 import lt.lyre.accomplishbot.utils.CollectionHelper;
+import org.bson.types.ObjectId;
 import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.Morphia;
 import org.mongodb.morphia.query.UpdateOperations;
@@ -26,41 +28,46 @@ public class MongoDbHandler {
         mongoDatastore.ensureIndexes();
     }
 
-    public boolean finishListItem(String listName, String listItemName, long telegramId) {
+    public boolean finishListItem(ObjectId listId, ObjectId listItemId, long telegramId) {
         UpdateOperations<UserList> updateOperations = mongoDatastore.createUpdateOperations
                 (UserList.class).set("items.$.isFinished", true);
 
         mongoDatastore.update(mongoDatastore.createQuery(UserList.class)
                 .filter("telegramId", telegramId)
-                .filter("listName", listName)
-                .filter("items.itemName", listItemName), updateOperations);
+                .filter("_id", listId)
+                .filter("items._id", listItemId), updateOperations);
 
         return true;
     }
 
-    public boolean redoListItem(String listName, String listItemName, long telegramId) {
+    public boolean redoListItem(ObjectId listId, ObjectId listItemId, long telegramId) {
         UpdateOperations<UserList> updateOperations = mongoDatastore.createUpdateOperations
                 (UserList.class).set("items.$.isFinished", false);
 
         mongoDatastore.update(mongoDatastore.createQuery(UserList.class)
                 .filter("telegramId", telegramId)
-                .filter("listName", listName)
-                .filter("items.itemName", listItemName), updateOperations);
+                .filter("_id", listId)
+                .filter("items._id", listItemId), updateOperations);
 
         return true;
     }
 
-    public void removeListItem(String listName, String listItemName, long telegramId) {
-        mongoDatastore.delete(mongoDatastore.createQuery(UserList.class)
+    public void removeListItem(ObjectId listId, ObjectId listItemId, long telegramId) {
+        UpdateOperations<UserList> updateOperations = mongoDatastore.createUpdateOperations
+                (UserList.class)
+                .disableValidation()
+                .removeAll("items", new BasicDBObject("_id", listItemId))
+                .enableValidation();
+
+        mongoDatastore.update(mongoDatastore.createQuery(UserList.class)
                 .filter("telegramId", telegramId)
-                .filter("listName", listName)
-                .filter("items.itemName", listItemName));
+                .filter("_id", listId), updateOperations);
     }
 
-    public void removeList(String listName, long telegramId) {
+    public void removeList(ObjectId listId, long telegramId) {
         mongoDatastore.delete(mongoDatastore.createQuery(UserList.class)
                 .filter("telegramId", telegramId)
-                .filter("listName", listName));
+                .filter("_id", listId));
 
         User user = getUserByTelegramId(telegramId);
 
@@ -69,13 +76,13 @@ public class MongoDbHandler {
         }
     }
 
-    public UserList insertListItem(String listName, List<String> items, long telegramId) {
-        UserList list = getUserListByName(listName, telegramId); // For now, we wanna have UNO list
+    public UserList insertListItem(ObjectId listId, List<String> items, long telegramId) {
+        UserList list = getUserListById(listId, telegramId); // For now, we wanna have UNO list
 
         if (list == null) {
             list = new UserList();
             list.setTelegramId(telegramId);
-            list.setListName(listName);
+            list.setListName("test");
         }
 
         list.getItems().addAll(items.stream().map(item -> new UserListItem(item)).collect(Collectors.toList()));
@@ -98,12 +105,6 @@ public class MongoDbHandler {
         mongoDatastore.save(user);
     }
 
-    public void logLastCommand(User user, String command) {
-        final UpdateOperations<User> updateOperations = mongoDatastore.createUpdateOperations(User.class)
-                .set("lastCommand", command);
-        mongoDatastore.update(user, updateOperations);
-    }
-
     public User getUserByTelegramId(long telegramId) {
         List<User> result = mongoDatastore.createQuery(User.class)
                 .field("telegramId").equal(telegramId)
@@ -112,9 +113,9 @@ public class MongoDbHandler {
         return CollectionHelper.getGenericList(result);
     }
 
-    public UserList getUserListByName(String listName, long telegramId) {
+    public UserList getUserListById(ObjectId listId, long telegramId) {
         List<UserList> result = mongoDatastore.createQuery(UserList.class)
-                .field("listName").equal(listName)
+                .field("_id").equal(listId)
                 .field("telegramId").equal(telegramId)
                 .asList();
 
