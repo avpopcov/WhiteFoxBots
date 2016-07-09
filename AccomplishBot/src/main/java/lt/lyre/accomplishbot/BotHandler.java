@@ -2,6 +2,8 @@ package lt.lyre.accomplishbot;
 
 import lt.lyre.accomplishbot.commands.BotCommands;
 import lt.lyre.accomplishbot.configuration.BotConfig;
+import lt.lyre.accomplishbot.localization.Languages;
+import lt.lyre.accomplishbot.localization.LocalizationManager;
 import lt.lyre.accomplishbot.models.User;
 import lt.lyre.accomplishbot.models.UserList;
 import lt.lyre.accomplishbot.models.UserListItem;
@@ -32,10 +34,12 @@ public class BotHandler extends TelegramLongPollingBot {
     private static final String BOT_LOG_TAG = BotConfig.BOT_USERNAME + "_Log_Tag";
     private static final String WELCOME_MESSAGE = "Welcome to AccomplishBot.";
 
+    private LocalizationManager localizationManager;
     private MongoDbHandler mongo;
 
     public BotHandler() {
         mongo = new MongoDbHandler();
+        localizationManager = new LocalizationManager();
     }
 
     @Override
@@ -167,7 +171,7 @@ public class BotHandler extends TelegramLongPollingBot {
         } else {
             user.setLastCommand(command.getCommandString());
             mongo.updateUser(user);
-            
+
             String resultMessage;
             switch (command) {
                 case CMD_ABOUT:
@@ -354,7 +358,7 @@ public class BotHandler extends TelegramLongPollingBot {
             sendMessage.setReplayMarkup(replyKeyboardMarkup);
         }
 
-        sendMessage.setText(WELCOME_MESSAGE);
+        sendMessage.setText(localizationManager.getResource("testWelcomeMessage", Languages.ENGLISH));
 
         try {
             sendMessage(sendMessage);
