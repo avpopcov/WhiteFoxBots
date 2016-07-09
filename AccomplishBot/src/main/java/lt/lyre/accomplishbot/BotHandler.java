@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
  */
 public class BotHandler extends TelegramLongPollingBot {
     private static final String BOT_LOG_TAG = BotConfig.BOT_USERNAME + "_Log_Tag";
-    private static final String WELCOME_MESSAGE = "Welcome to AccomplishBot.";
 
     private LocalizationManager localizationManager;
     private MongoDbHandler mongo;
@@ -166,8 +165,7 @@ public class BotHandler extends TelegramLongPollingBot {
         BotCommands command = BotCommands.getByCommandString(parsedUserCommand.getUserCommand());
 
         if (command == null) {
-            sendPlainMessage(message.getChatId().toString(), message.getMessageId(),
-                    "Did you say: " + message.getText() + "?. Unknown command. Try a different one.");
+            sendPlainMessage(message.getChatId().toString(), message.getMessageId(), localizationManager.getResource("unknownMessage", user.getLanguage()));
         } else {
             user.setLastCommand(command.getCommandString());
             mongo.updateUser(user);
@@ -175,7 +173,7 @@ public class BotHandler extends TelegramLongPollingBot {
             String resultMessage;
             switch (command) {
                 case CMD_ABOUT:
-                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), "A set of programmers from Lyre Inc. made this. Be proud. Be grateful. Most of all be free.");
+                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), localizationManager.getResource("aboutMessage", user.getLanguage()));
                     break;
                 case CMD_ADD:
                     List<String> listItem = parsedUserCommand.getParameters();
@@ -186,18 +184,17 @@ public class BotHandler extends TelegramLongPollingBot {
                     mongo.updateUser(user); // Let's update user with current list
 
                     if (listItem.size() > 1) {
-                        resultMessage = String.format("Items: %s were added to the list.",
-                                listItem.stream().collect(Collectors.joining(", ")));
+                        resultMessage = String.format(localizationManager.getResource("itemsAddedPluralMessage", user.getLanguage()), listItem.stream().collect(Collectors.joining(", ")));
                     } else if (listItem.size() == 1) {
-                        resultMessage = String.format("Item %s was added to the list.", listItem.get(0));
+                        resultMessage = String.format(localizationManager.getResource("itemAddedSingularMessage", user.getLanguage()), listItem.get(0));
                     } else {
-                        resultMessage = "No items were added";
+                        resultMessage = localizationManager.getResource("noItemsAddedMessage", user.getLanguage());
                     }
 
                     sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
                     break;
                 case CMD_FEEDBACK:
-                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), "feedback@lyre.lt");
+                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), localizationManager.getResource("feedbackMessage", user.getLanguage()));
                     break;
                 case CMD_FINISH:
 //                    String itemToFinish = parsedUserCommand.getParameters().stream().findFirst().orElse("");
@@ -215,10 +212,10 @@ public class BotHandler extends TelegramLongPollingBot {
                     String userListHeaderMessage = "";
                     InlineKeyboardMarkup listMarkup = null;
                     if (userLists == null || userLists.isEmpty()) {
-                        userListHeaderMessage = "Your lists are empty.";
+                        userListHeaderMessage = localizationManager.getResource("emptyListMessage", user.getLanguage());
                     } else {
                         listMarkup = getUserListReplyMarkup(userLists);
-                        userListHeaderMessage = "Your item list:";
+                        userListHeaderMessage = localizationManager.getResource("itemListMessage", user.getLanguage());
                     }
 
                     sendPlainMessage(message.getChatId().toString(), message.getMessageId(), userListHeaderMessage, listMarkup);
@@ -230,12 +227,12 @@ public class BotHandler extends TelegramLongPollingBot {
                     String messageText = "";
                     InlineKeyboardMarkup rk = null;
                     if (result == null || result.isEmpty()) {
-                        messageText = String.format("Your lists are empty.");
+                        messageText = localizationManager.getResource("emptyListMessage", user.getLanguage());
                     } else {
                         List<UserListItem> items = result.stream().findAny().get().getItems();
                         String listId = result.stream().findAny().get().getId().toString();
                         rk = getMessageReplyMarkup(listId, items);
-                        messageText = "Your item list:";
+                        messageText = localizationManager.getResource("itemListMessage", user.getLanguage());
                     }
 
                     sendPlainMessage(message.getChatId().toString(), message.getMessageId(), messageText, rk);
@@ -252,7 +249,7 @@ public class BotHandler extends TelegramLongPollingBot {
 //                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
                     break;
                 case CMD_START:
-                    sendWelcomeMessage(message.getChatId().toString(), message.getMessageId(), null);
+                    sendWelcomeMessage(user, message.getChatId().toString(), message.getMessageId(), null);
                     break;
             }
         }
@@ -348,7 +345,7 @@ public class BotHandler extends TelegramLongPollingBot {
         }
     }
 
-    private void sendWelcomeMessage(String chatId, Integer messageId, ReplyKeyboardMarkup replyKeyboardMarkup) {
+    private void sendWelcomeMessage(User user, String chatId, Integer messageId, ReplyKeyboardMarkup replyKeyboardMarkup) {
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableMarkdown(true);
         sendMessage.setChatId(chatId);
@@ -358,7 +355,7 @@ public class BotHandler extends TelegramLongPollingBot {
             sendMessage.setReplayMarkup(replyKeyboardMarkup);
         }
 
-        sendMessage.setText(localizationManager.getResource("testWelcomeMessage", Languages.ENGLISH));
+        sendMessage.setText(localizationManager.getResource("welcomeMessage", user.getLanguage()));
 
         try {
             sendMessage(sendMessage);

@@ -1,12 +1,12 @@
 package lt.lyre.accomplishbot.models;
 
+import lt.lyre.accomplishbot.commands.BotCommands;
+import lt.lyre.accomplishbot.localization.Languages;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.Id;
 import org.mongodb.morphia.annotations.Property;
 import org.mongodb.morphia.annotations.Reference;
-
-import lt.lyre.accomplishbot.commands.BotCommands;
 
 import java.util.Date;
 
@@ -18,7 +18,7 @@ public class User {
     public User() {
         added = new Date();
         delimiter = ",";
-        language = "English";
+        language = Languages.ENGLISH;
         lastCommand = BotCommands.CMD_ADD.getCommandString();
     }
 
@@ -35,7 +35,7 @@ public class User {
     private String delimiter;
 
     @Property("userLanguage")
-    private String language;
+    private Languages language;
 
     @Property("lastCommand")
     private String lastCommand;
@@ -78,11 +78,11 @@ public class User {
         this.delimiter = delimiter;
     }
 
-    public String getLanguage() {
+    public Languages getLanguage() {
         return language;
     }
 
-    public void setLanguage(String language) {
+    public void setLanguage(Languages language) {
         this.language = language;
     }
 
