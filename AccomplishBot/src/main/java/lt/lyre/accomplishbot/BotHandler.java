@@ -165,38 +165,24 @@ public class BotHandler extends TelegramLongPollingBot {
         BotCommands command = BotCommands.getByCommandString(parsedUserCommand.getUserCommand());
 
         if (command == null) {
-            sendPlainMessage(message.getChatId().toString(), message.getMessageId(), localizationManager.getResource("unknownMessage", user.getLanguage()));
+            command = BotCommands.getByCommandString(user.getLastCommand());
+            //sendPlainMessage(message.getChatId().toString(), message.getMessageId(), localizationManager.getResource("unknownMessage", user.getLanguage()));
         } else {
             user.setLastCommand(command.getCommandString());
             mongo.updateUser(user);
-
-            String resultMessage;
-            switch (command) {
-                case CMD_ABOUT:
-                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), localizationManager.getResource("aboutMessage", user.getLanguage()));
-                    break;
-                case CMD_ADD:
-                    List<String> listItem = parsedUserCommand.getParameters();
-
-                    UserList currentList = user.getCurrentList();
-                    user.setCurrentList(mongo.insertListItem(currentList == null ? new ObjectId() : currentList.getId(), listItem, message.getFrom().getId()));
-
-                    mongo.updateUser(user); // Let's update user with current list
-
-                    if (listItem.size() > 1) {
-                        resultMessage = String.format(localizationManager.getResource("itemsAddedPluralMessage", user.getLanguage()), listItem.stream().collect(Collectors.joining(", ")));
-                    } else if (listItem.size() == 1) {
-                        resultMessage = String.format(localizationManager.getResource("itemAddedSingularMessage", user.getLanguage()), listItem.get(0));
-                    } else {
-                        resultMessage = localizationManager.getResource("noItemsAddedMessage", user.getLanguage());
-                    }
-
-                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
-                    break;
-                case CMD_FEEDBACK:
-                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), localizationManager.getResource("feedbackMessage", user.getLanguage()));
-                    break;
-                case CMD_FINISH:
+        }
+        String resultMessage;
+        switch (command) {
+            case CMD_ABOUT:
+                sendPlainMessage(message.getChatId().toString(), message.getMessageId(), localizationManager.getResource("aboutMessage", user.getLanguage()));
+                break;
+            case CMD_ADD:
+                addItem(parsedUserCommand, user, message);
+                break;
+            case CMD_FEEDBACK:
+                sendPlainMessage(message.getChatId().toString(), message.getMessageId(), localizationManager.getResource("feedbackMessage", user.getLanguage()));
+                break;
+            case CMD_FINISH:
 //                    String itemToFinish = parsedUserCommand.getParameters().stream().findFirst().orElse("");
 //                    boolean isSuccessful = mongo.finishListItem("test", itemToFinish, message.getFrom().getId());
 //                    if (isSuccessful) {
@@ -205,41 +191,28 @@ public class BotHandler extends TelegramLongPollingBot {
 //                        resultMessage = String.format("Item %s was not found", itemToFinish);
 //                    }
 //                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
-                    break;
-                case CMD_LISTS:
-                    List<UserList> userLists = mongo.getUserListsByTelegramId(message.getFrom().getId());
+                break;
+            case CMD_LISTS:
+                List<UserList> userLists = mongo.getUserListsByTelegramId(message.getFrom().getId());
 
-                    String userListHeaderMessage = "";
-                    InlineKeyboardMarkup listMarkup = null;
-                    if (userLists == null || userLists.isEmpty()) {
-                        userListHeaderMessage = localizationManager.getResource("emptyListMessage", user.getLanguage());
-                    } else {
-                        listMarkup = getUserListReplyMarkup(userLists);
-                        userListHeaderMessage = localizationManager.getResource("itemListMessage", user.getLanguage());
-                    }
+                String userListHeaderMessage = "";
+                InlineKeyboardMarkup listMarkup = null;
+                if (userLists == null || userLists.isEmpty()) {
+                    userListHeaderMessage = localizationManager.getResource("emptyListMessage", user.getLanguage());
+                } else {
+                    listMarkup = getUserListReplyMarkup(userLists);
+                    userListHeaderMessage = localizationManager.getResource("itemListMessage", user.getLanguage());
+                }
 
-                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), userListHeaderMessage, listMarkup);
-                    break;
-                case CMD_ITEMS:
-                case CMD_LIST:
-                    List<UserList> result = mongo.getUserListsByTelegramId(message.getFrom().getId());
-
-                    String messageText = "";
-                    InlineKeyboardMarkup rk = null;
-                    if (result == null || result.isEmpty()) {
-                        messageText = localizationManager.getResource("emptyListMessage", user.getLanguage());
-                    } else {
-                        List<UserListItem> items = result.stream().findAny().get().getItems();
-                        String listId = result.stream().findAny().get().getId().toString();
-                        rk = getMessageReplyMarkup(listId, items);
-                        messageText = localizationManager.getResource("itemListMessage", user.getLanguage());
-                    }
-
-                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), messageText, rk);
-                    break;
-                case CMD_SETTINGS:
-                    break;
-                case CMD_REMOVE:
+                sendPlainMessage(message.getChatId().toString(), message.getMessageId(), userListHeaderMessage, listMarkup);
+                break;
+            case CMD_ITEMS:
+            case CMD_LIST:
+                showList(message, user);
+                break;
+            case CMD_SETTINGS:
+                break;
+            case CMD_REMOVE:
 //                    String itemToRemove = parsedUserCommand.getParameters().stream().findFirst().orElse("");
 //
 //                    mongo.removeListItem("test", itemToRemove, message.getFrom().getId());
@@ -247,12 +220,53 @@ public class BotHandler extends TelegramLongPollingBot {
 //                    resultMessage = String.format("Item %s was removed successfully", itemToRemove);
 //
 //                    sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);
-                    break;
-                case CMD_START:
-                    sendWelcomeMessage(user, message.getChatId().toString(), message.getMessageId(), null);
-                    break;
-            }
+                break;
+            case CMD_START:
+                sendWelcomeMessage(user, message.getChatId().toString(), message.getMessageId(), null);
+                break;
         }
+    }
+
+    private void showList(Message message, User user) {
+        List<UserList> result = mongo.getUserListsByTelegramId(message.getFrom().getId());
+
+        String messageText = "";
+        InlineKeyboardMarkup rk = null;
+        if (result == null || result.isEmpty()) {
+            messageText = localizationManager.getResource("emptyListMessage", user.getLanguage());
+        } else {
+            List<UserListItem> items = result.stream().findAny().get().getItems();
+            String listId = result.stream().findAny().get().getId().toString();
+            rk = getMessageReplyMarkup(listId, items);
+            messageText = localizationManager.getResource("itemListMessage", user.getLanguage());
+        }
+
+        sendPlainMessage(message.getChatId().toString(), message.getMessageId(), messageText, rk);
+        user.setLastCommand(BotCommands.CMD_ADD.getCommandString());
+        mongo.updateUser(user);
+
+    }
+
+    private void addItem(ParsedUserCommand parsedUserCommand, User user, Message message) {
+        List<String> listItem = parsedUserCommand.getParameters();
+
+        UserList currentList = user.getCurrentList();
+        user.setCurrentList(mongo.insertListItem(currentList == null ? new ObjectId() : currentList.getId(), listItem, message.getFrom().getId()));
+
+        mongo.updateUser(user); // Let's update user with current list
+
+        showList(message, user);
+        /*String resultMessage;
+        if (listItem.size() > 1) {
+            resultMessage = String.format(localizationManager.getResource("itemsAddedPluralMessage", user.getLanguage()), listItem.stream().collect(Collectors.joining(", ")));
+        } else if (listItem.size() == 1) {
+            resultMessage = String.format(localizationManager.getResource("itemAddedSingularMessage", user.getLanguage()), listItem.get(0));
+        } else {
+            resultMessage = localizationManager.getResource("noItemsAddedMessage", user.getLanguage());
+        }
+
+        sendPlainMessage(message.getChatId().toString(), message.getMessageId(), resultMessage);*/
+
     }
 
     private InlineKeyboardMarkup getUserListReplyMarkup(List<UserList> items) {
@@ -295,29 +309,43 @@ public class BotHandler extends TelegramLongPollingBot {
         InlineKeyboardMarkup rk = new InlineKeyboardMarkup();
 
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-
+        List<InlineKeyboardButton> row;
+        InlineKeyboardButton button;
         for (UserListItem item : items) {
-            List<InlineKeyboardButton> row = new ArrayList<>();
+            row = new ArrayList<>();
 
-            InlineKeyboardButton button = new InlineKeyboardButton();
-            button.setText(item.isFinished() ? "\u2705" : "\u25AA");
-            // If task is finished, then clear it. Otherwise mark it as finished.
+            button = new InlineKeyboardButton();
+//            button.setText(item.isFinished() ? "\u2705" : "\u25AA");
+//            // If task is finished, then clear it. Otherwise mark it as finished.
+//            button.setCallbackData((item.isFinished() ? "redo " : "finish ") + item.getId()
+//                    + " " + listId);
+//            row.add(button);
+
+            button = new InlineKeyboardButton();
+            button.setText((item.isFinished() ? "\u2705" : "\u25AA") + " " + item.getItemName() +
+                    localizationManager.getResource("spaces", Languages.ENGLISH));
+//            button.setCallbackData("modify " + item.getId() + " " + listId);
             button.setCallbackData((item.isFinished() ? "redo " : "finish ") + item.getId()
                     + " " + listId);
             row.add(button);
 
-            button = new InlineKeyboardButton();
-            button.setText(item.getItemName());
-            button.setCallbackData("modify " + item.getId() + " " + listId);
-            row.add(button);
-
-            button = new InlineKeyboardButton();
-            button.setText("\uD83D\uDDD1");
-            button.setCallbackData("remove " + item.getId() + " " + listId);
-            row.add(button);
+//            button = new InlineKeyboardButton();
+//            button.setText("\uD83D\uDDD1");
+//            button.setCallbackData("remove " + item.getId() + " " + listId);
+//            row.add(button);
 
             rows.add(row);
         }
+        row = new ArrayList<>();
+        button = new InlineKeyboardButton();
+            button.setText("Edit");
+            button.setCallbackData("edit ");
+            row.add(button);
+        button = new InlineKeyboardButton();
+        button.setText("More" + " \u25B6");
+        button.setCallbackData("more ");
+        row.add(button);
+        rows.add(row);
 
         rk.setKeyboard(rows);
 
@@ -333,7 +361,7 @@ public class BotHandler extends TelegramLongPollingBot {
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableMarkdown(true);
         sendMessage.setChatId(chatId);
-        sendMessage.setReplayToMessageId(messageId);
+//        sendMessage.setReplayToMessageId(messageId);
         sendMessage.setReplayMarkup(replyKeyboardMarkup);
         sendMessage.setText(expression);
 
@@ -349,7 +377,7 @@ public class BotHandler extends TelegramLongPollingBot {
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableMarkdown(true);
         sendMessage.setChatId(chatId);
-        sendMessage.setReplayToMessageId(messageId);
+//        sendMessage.setReplayToMessageId(messageId);
 
         if (replyKeyboardMarkup != null) {
             sendMessage.setReplayMarkup(replyKeyboardMarkup);
