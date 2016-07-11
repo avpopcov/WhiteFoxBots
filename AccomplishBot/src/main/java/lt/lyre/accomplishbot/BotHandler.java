@@ -1,14 +1,5 @@
 package lt.lyre.accomplishbot;
 
-import lt.lyre.accomplishbot.commands.BotCommands;
-import lt.lyre.accomplishbot.configuration.BotConfig;
-import lt.lyre.accomplishbot.localization.Languages;
-import lt.lyre.accomplishbot.localization.LocalizationManager;
-import lt.lyre.accomplishbot.models.User;
-import lt.lyre.accomplishbot.models.UserList;
-import lt.lyre.accomplishbot.models.UserListItem;
-import lt.lyre.accomplishbot.utils.UserCommandParser;
-import lt.lyre.accomplishbot.utils.models.ParsedUserCommand;
 import org.bson.types.ObjectId;
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
@@ -25,7 +16,16 @@ import org.telegram.telegrambots.logging.BotLogger;
 import java.io.InvalidObjectException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import lt.lyre.accomplishbot.commands.BotCommands;
+import lt.lyre.accomplishbot.configuration.BotConfig;
+import lt.lyre.accomplishbot.localization.Languages;
+import lt.lyre.accomplishbot.localization.LocalizationManager;
+import lt.lyre.accomplishbot.models.User;
+import lt.lyre.accomplishbot.models.UserList;
+import lt.lyre.accomplishbot.models.UserListItem;
+import lt.lyre.accomplishbot.utils.UserCommandParser;
+import lt.lyre.accomplishbot.utils.models.ParsedUserCommand;
 
 /**
  * Created by Dmitrij on 2016-06-18.
@@ -88,12 +88,12 @@ public class BotHandler extends TelegramLongPollingBot {
             case "redo":
                 mongo.redoListItem(new ObjectId(list), new ObjectId(item), telegramId);
                 break;
-            case "modify":
-                // TODO: Implement modify list item feature.
-                break;
             case "remove":
                 mongo.removeListItem(new ObjectId(list), new ObjectId(item), telegramId);
                 break;
+            case "modify":
+                // TODO: Implement modify list item feature.
+                return;
             case "listItems":
                 List<UserListItem> userListItems = mongo.getUserListsByTelegramId(telegramId).stream().filter(i -> i.getId().toString().equals(item)).findFirst().get().getItems();
 
@@ -138,7 +138,9 @@ public class BotHandler extends TelegramLongPollingBot {
         EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
         editMessageReplyMarkup.setChatId(query.getMessage().getChatId() + "");
         editMessageReplyMarkup.setMessageId(query.getMessage().getMessageId());
-        editMessageReplyMarkup.setReplyMarkup(getMessageReplyMarkup(list, items));
+        // Change view to "edit item" view when command was edit or modify.
+        editMessageReplyMarkup.setReplyMarkup(getMessageReplyMarkup(list, items,
+            command.equals("modify") || command.equals("edit")));
 
         try {
             editMessageReplyMarkup(editMessageReplyMarkup);
@@ -283,7 +285,7 @@ public class BotHandler extends TelegramLongPollingBot {
 
             User user = mongo.getUserByTelegramId(item.getTelegramId());
             if (user.getCurrentList() != null &&
-                    user.getCurrentList().getId().equals(item.getId())) {
+                user.getCurrentList().getId().equals(item.getId())) {
                 isSelected = true;
             }
 
@@ -306,6 +308,11 @@ public class BotHandler extends TelegramLongPollingBot {
     }
 
     private InlineKeyboardMarkup getMessageReplyMarkup(String listId, List<UserListItem> items) {
+        return getMessageReplyMarkup(listId, items, false);
+    }
+
+    private InlineKeyboardMarkup getMessageReplyMarkup(String listId, List<UserListItem> items,
+                                                       boolean editItem) {
         InlineKeyboardMarkup rk = new InlineKeyboardMarkup();
 
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
@@ -322,11 +329,19 @@ public class BotHandler extends TelegramLongPollingBot {
 //            row.add(button);
 
             button = new InlineKeyboardButton();
-            button.setText((item.isFinished() ? "\u2705" : "\u25AA") + " " + item.getItemName() +
+            if (editItem) {
+                button.setText("✏️ " + item.getItemName() +
+                    localizationManager.getResource("spaces", Languages.ENGLISH));
+
+                button.setCallbackData("modify " + item.getId() + " " + listId);
+            } else {
+                button.setText((item.isFinished() ? "\u2705" : "\u25AA") + " " + item.getItemName() +
                     localizationManager.getResource("spaces", Languages.ENGLISH));
 //            button.setCallbackData("modify " + item.getId() + " " + listId);
-            button.setCallbackData((item.isFinished() ? "redo " : "finish ") + item.getId()
+
+                button.setCallbackData((item.isFinished() ? "redo " : "finish ") + item.getId()
                     + " " + listId);
+            }
             row.add(button);
 
 //            button = new InlineKeyboardButton();
@@ -338,9 +353,14 @@ public class BotHandler extends TelegramLongPollingBot {
         }
         row = new ArrayList<>();
         button = new InlineKeyboardButton();
+        if (editItem) {
+            button.setText("View");
+            button.setCallbackData("view list " + listId);
+        } else {
             button.setText("Edit");
-            button.setCallbackData("edit ");
-            row.add(button);
+            button.setCallbackData("edit list " + listId);
+        }
+        row.add(button);
         button = new InlineKeyboardButton();
         button.setText("More" + " \u25B6");
         button.setCallbackData("more ");
