@@ -100,7 +100,8 @@ public class BotHandler extends TelegramLongPollingBot {
                 EditMessageReplyMarkup emrm = new EditMessageReplyMarkup();
                 emrm.setChatId(query.getMessage().getChatId() + "");
                 emrm.setMessageId(query.getMessage().getMessageId());
-                emrm.setReplyMarkup(getMessageReplyMarkup(item, userListItems));
+                emrm.setReplyMarkup(getMessageReplyMarkup(item, userListItems,
+                    mongo.getUserByTelegramId(telegramId)));
 
                 try {
                     editMessageReplyMarkup(emrm);
@@ -140,7 +141,7 @@ public class BotHandler extends TelegramLongPollingBot {
         editMessageReplyMarkup.setMessageId(query.getMessage().getMessageId());
         // Change view to "edit item" view when command was edit or modify.
         editMessageReplyMarkup.setReplyMarkup(getMessageReplyMarkup(list, items,
-            command.equals("modify") || command.equals("edit")));
+            command.equals("modify") || command.equals("edit"), mongo.getUserByTelegramId(telegramId)));
 
         try {
             editMessageReplyMarkup(editMessageReplyMarkup);
@@ -239,7 +240,7 @@ public class BotHandler extends TelegramLongPollingBot {
         } else {
             List<UserListItem> items = result.stream().findAny().get().getItems();
             String listId = result.stream().findAny().get().getId().toString();
-            rk = getMessageReplyMarkup(listId, items);
+            rk = getMessageReplyMarkup(listId, items, user);
             messageText = localizationManager.getResource("itemListMessage", user.getLanguage());
         }
 
@@ -307,12 +308,13 @@ public class BotHandler extends TelegramLongPollingBot {
         return rk;
     }
 
-    private InlineKeyboardMarkup getMessageReplyMarkup(String listId, List<UserListItem> items) {
-        return getMessageReplyMarkup(listId, items, false);
+    private InlineKeyboardMarkup getMessageReplyMarkup(String listId, List<UserListItem> items,
+                                                       User user) {
+        return getMessageReplyMarkup(listId, items, false, user);
     }
 
     private InlineKeyboardMarkup getMessageReplyMarkup(String listId, List<UserListItem> items,
-                                                       boolean editItem) {
+                                                       boolean editItem, User user) {
         InlineKeyboardMarkup rk = new InlineKeyboardMarkup();
 
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
@@ -354,15 +356,15 @@ public class BotHandler extends TelegramLongPollingBot {
         row = new ArrayList<>();
         button = new InlineKeyboardButton();
         if (editItem) {
-            button.setText("View");
+            button.setText(localizationManager.getResource("viewButton", user.getLanguage()));
             button.setCallbackData("view list " + listId);
         } else {
-            button.setText("Edit");
+            button.setText(localizationManager.getResource("editButton", user.getLanguage()));
             button.setCallbackData("edit list " + listId);
         }
         row.add(button);
         button = new InlineKeyboardButton();
-        button.setText("More" + " \u25B6");
+        button.setText(localizationManager.getResource("moreButton", user.getLanguage()) + " \u25B6");
         button.setCallbackData("more ");
         row.add(button);
         rows.add(row);
