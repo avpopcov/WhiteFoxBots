@@ -6,6 +6,6 @@ package lt.lyre.accomplishbot.configuration;
 public class BotConfig {
 //    public static final String BOT_TOKEN = "244459137:AAGlGmr5yS9-vEn8gqXmoMiDx8VURD2yzXU";
 //    public static final String BOT_USERNAME = "AccomplishTesting";
-    public static final String BOT_TOKEN = "258780189:AAGBNIc107CU-ORr47Chd_-RW2nglxpQYYI";
-    public static final String BOT_USERNAME = "AccomplishBotTestingAnatolijBot";
+    public static final String BOT_TOKEN = "235507499:AAFa5NvFsSUsazBjY2oF9mwyqS0_2SDSnkI";
+    public static final String BOT_USERNAME = "LyreTest5Bot";
 }

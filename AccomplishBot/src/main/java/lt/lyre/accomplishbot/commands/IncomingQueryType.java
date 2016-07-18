@@ -2,22 +2,16 @@ package lt.lyre.accomplishbot.commands;
 
 import java.util.Arrays;
 
-public enum BotCommands {
+public enum IncomingQueryType {
 
-    CMD_START("/start"),
-    CMD_LIST("/list"),
-    CMD_LISTS("/lists"),
-    CMD_ITEMS("/items"),
-    CMD_ADD("/add"),
-    CMD_FINISH("/finish"),
-    CMD_SETTINGS("/settings"),
-    CMD_ABOUT("/about"),
-    CMD_FEEDBACK("/feedback"),
-    CMD_REMOVE("/remove");
+    INCOMING_QUERY_TYPE_MESSAGE("message/"),
+    INCOMING_QUERY_TYPE_LIST("list/"),
+    INCOMING_QUERY_TYPE_LANGUAGE("language/"),
+    INCOMING_QUERY_TYPE_SETTINGS("settings/");
 
     private String commandString;
 
-    private BotCommands(String commandString) {
+    private IncomingQueryType(String commandString) {
         this.commandString = commandString;
     }
 
@@ -25,10 +19,12 @@ public enum BotCommands {
         return commandString;
     }
 
-    public static BotCommands getByCommandString(String commandString) {
+    public static IncomingQueryType getByCommandString(String commandString) {
         return Arrays.stream(values())
                 .filter(cmd -> cmd.commandString.equalsIgnoreCase(commandString))
                 .findFirst()
                 .orElse(null);
+
     }
+
 }
