@@ -35,8 +35,9 @@ public class LocalizationManager {
         String decoded = null;
         byte[] lameBytes = null;
         try {
-            if (bundle.getString(key) != null) {
-                lameBytes = bundle.getString(key).getBytes("ISO-8859-1");
+            String potentialText = bundle.getString(key);
+            if (potentialText != null) {
+                lameBytes = potentialText.getBytes("ISO-8859-1");
             }
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
