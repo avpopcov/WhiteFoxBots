@@ -99,7 +99,7 @@ public class BotHandler extends TelegramLongPollingBot {
         }
 
         user.setLanguage(language);
-        showWelcomeMessage(user, message, null);
+        showWelcomeMessage(user, message);
         mongo.updateUser(user);
 
     }
@@ -300,6 +300,9 @@ public class BotHandler extends TelegramLongPollingBot {
     }
 
     private void showList(Message message, User user) {
+        purgeLastListMessage(message, user);
+        user.setLastListMessageId(message.getMessageId() + 1);
+
         List<UserList> resultList = mongo.getUserListsByTelegramId(message.getChat().getId());
 
         String messageText = "";
@@ -317,6 +320,11 @@ public class BotHandler extends TelegramLongPollingBot {
         user.setLastCommand(BotCommands.CMD_ADD.getCommandString());
         mongo.updateUser(user);
 
+    }
+
+    private void purgeLastListMessage(Message message, User user) {
+
+        editMessageText(message.getChatId(), user.getLastListMessageId() , ".");
     }
 
     private void addItem(ParsedUserCommand parsedUserCommand, User user, Message message) {
@@ -487,12 +495,17 @@ public class BotHandler extends TelegramLongPollingBot {
         sendPlainMessage(message.getChatId().toString(), message.getMessageId(), messageText, rk);
     }
 
-    private void showWelcomeMessage(User user, Message message, ReplyKeyboardMarkup replyKeyboardMarkup) {
-        String messageText = localizationManager.getResource("welcomeMessage", user.getLanguage());
+    private void showWelcomeMessage(User user, Message message) {
+        editMessageText(message.getChatId(), message.getMessageId(), localizationManager.getResource("welcomeMessage", user.getLanguage()));
+
+        showList(message, user);
+    }
+
+    private void editMessageText(Long chatId, Integer messageId, String messageText){
 
         EditMessageText editMessageText = new EditMessageText();
-        editMessageText.setChatId(message.getChatId() + "");
-        editMessageText.setMessageId(message.getMessageId());
+        editMessageText.setChatId(chatId + "");
+        editMessageText.setMessageId(messageId);
         // Change view to "edit item" view when command was edit or modify.
         editMessageText.setText(messageText);
 
@@ -501,7 +514,6 @@ public class BotHandler extends TelegramLongPollingBot {
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
-
-        showList(message, user);
     }
+
 }
