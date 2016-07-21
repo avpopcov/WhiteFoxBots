@@ -40,6 +40,9 @@ public class User {
     @Property("lastCommand")
     private String lastCommand;
 
+    @Property("lastIncomingQueryCommand")
+    private String lastIncomingQueryCommand;
+
     @Property("lastListMessageId")
     private Integer lastListMessageId;
 
@@ -103,6 +106,14 @@ public class User {
 
     public void setLastListMessageId(Integer lastListMessageId) {
         this.lastListMessageId = lastListMessageId;
+    }
+
+    public void setLastIncomingQueryCommand(String lastIncomingQueryCommand) {
+        this.lastIncomingQueryCommand = lastIncomingQueryCommand;
+    }
+
+    public String getLastIncomingQueryCommand() {
+        return lastIncomingQueryCommand;
     }
 
     public UserList getCurrentList() {
