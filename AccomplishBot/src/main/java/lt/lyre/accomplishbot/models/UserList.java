@@ -1,5 +1,6 @@
 package lt.lyre.accomplishbot.models;
 
+import lombok.Data;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.annotations.Embedded;
 import org.mongodb.morphia.annotations.Entity;
@@ -12,6 +13,7 @@ import java.util.List;
 /**
  * Created by Dmitrij on 2016-06-24.
  */
+@Data
 @Entity("lists")
 public class UserList {
     public UserList() {
@@ -29,36 +31,4 @@ public class UserList {
 
     @Embedded
     private List<UserListItem> items;
-
-    public ObjectId getId() {
-        return id;
-    }
-
-    public void setId(ObjectId id) {
-        this.id = id;
-    }
-
-    public long getTelegramId() {
-        return telegramId;
-    }
-
-    public void setTelegramId(long telegramId) {
-        this.telegramId = telegramId;
-    }
-
-    public String getListName() {
-        return listName;
-    }
-
-    public void setListName(String listName) {
-        this.listName = listName;
-    }
-
-    public List<UserListItem> getItems() {
-        return items;
-    }
-
-    public void setItems(List<UserListItem> items) {
-        this.items = items;
-    }
 }

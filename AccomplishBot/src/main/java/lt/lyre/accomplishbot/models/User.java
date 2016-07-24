@@ -1,5 +1,6 @@
 package lt.lyre.accomplishbot.models;
 
+import lombok.Data;
 import lt.lyre.accomplishbot.commands.BotCommands;
 import lt.lyre.accomplishbot.localization.Languages;
 import org.bson.types.ObjectId;
@@ -13,6 +14,7 @@ import java.util.Date;
 /**
  * Created by Dmitrij on 2016-06-24.
  */
+@Data
 @Entity("users")
 public class User {
     public User() {
@@ -51,84 +53,4 @@ public class User {
 
     @Property("creationDate")
     private Date added;
-
-    public ObjectId getId() {
-        return id;
-    }
-
-    public void setId(ObjectId id) {
-        this.id = id;
-    }
-
-    public long getTelegramId() {
-        return telegramId;
-    }
-
-    public void setTelegramId(long telegramId) {
-        this.telegramId = telegramId;
-    }
-
-    public String getUserName() {
-        return userName;
-    }
-
-    public void setUserName(String userName) {
-        this.userName = userName;
-    }
-
-    public String getDelimiter() {
-        return delimiter;
-    }
-
-    public void setDelimiter(String delimiter) {
-        this.delimiter = delimiter;
-    }
-
-    public Languages getLanguage() {
-        return language;
-    }
-
-    public void setLanguage(Languages language) {
-        this.language = language;
-    }
-
-    public String getLastCommand() {
-        return lastCommand;
-    }
-
-    public void setLastCommand(String lastCommand) {
-        this.lastCommand = lastCommand;
-    }
-
-    public Integer getLastListMessageId() {
-        return lastListMessageId;
-    }
-
-    public void setLastListMessageId(Integer lastListMessageId) {
-        this.lastListMessageId = lastListMessageId;
-    }
-
-    public void setLastIncomingQueryCommand(String lastIncomingQueryCommand) {
-        this.lastIncomingQueryCommand = lastIncomingQueryCommand;
-    }
-
-    public String getLastIncomingQueryCommand() {
-        return lastIncomingQueryCommand;
-    }
-
-    public UserList getCurrentList() {
-        return currentList;
-    }
-
-    public void setCurrentList(UserList currentList) {
-        this.currentList = currentList;
-    }
-
-    public Date getAdded() {
-        return added;
-    }
-
-    public void setAdded(Date added) {
-        this.added = added;
-    }
 }
