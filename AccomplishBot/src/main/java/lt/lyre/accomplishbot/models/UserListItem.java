@@ -1,5 +1,6 @@
 package lt.lyre.accomplishbot.models;
 
+import lombok.Data;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.annotations.Embedded;
 import org.mongodb.morphia.annotations.Property;
@@ -7,6 +8,7 @@ import org.mongodb.morphia.annotations.Property;
 /**
  * Created by Dmitrij on 2016-06-24.
  */
+@Data
 @Embedded
 public class UserListItem {
     public UserListItem() {
@@ -26,28 +28,4 @@ public class UserListItem {
 
     @Property("isFinished")
     private boolean isFinished;
-
-    public ObjectId getId() {
-        return id;
-    }
-
-    public void setId(ObjectId id) {
-        this.id = id;
-    }
-
-    public String getItemName() {
-        return itemName;
-    }
-
-    public void setItemName(String itemName) {
-        this.itemName = itemName;
-    }
-
-    public boolean isFinished() {
-        return isFinished;
-    }
-
-    public void setFinished(boolean finished) {
-        isFinished = finished;
-    }
 }

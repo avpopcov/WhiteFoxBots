@@ -1,9 +1,13 @@
 package lt.lyre.accomplishbot.models;
 
+import lombok.Data;
 import lt.lyre.accomplishbot.commands.BotCommands;
 import lt.lyre.accomplishbot.localization.Languages;
 import org.bson.types.ObjectId;
-import org.mongodb.morphia.annotations.*;
+import org.mongodb.morphia.annotations.Embedded;
+import org.mongodb.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Id;
+import org.mongodb.morphia.annotations.Property;
 
 import java.util.Date;
 import java.util.List;
@@ -11,6 +15,7 @@ import java.util.List;
 /**
  * Created by Dmitrij on 2016-06-24.
  */
+@Data
 @Entity("users")
 public class User {
     public User() {
@@ -67,133 +72,4 @@ public class User {
 
     @Embedded
     private List<UserListHeader> lists;
-
-    public ObjectId getId() {
-        return id;
-    }
-
-    public void setId(ObjectId id) {
-        this.id = id;
-    }
-
-    public long getTelegramId() {
-        return telegramId;
-    }
-
-    public void setTelegramId(long telegramId) {
-        this.telegramId = telegramId;
-    }
-
-    public String getUserName() {
-        return userName;
-    }
-
-    public void setUserName(String userName) {
-        this.userName = userName;
-    }
-
-    public String getDelimiter() {
-        return delimiter;
-    }
-
-    public void setDelimiter(String delimiter) {
-        this.delimiter = delimiter;
-    }
-
-    public Languages getLanguage() {
-        return language;
-    }
-
-    public void setLanguage(Languages language) {
-        this.language = language;
-    }
-
-    public String getLastCommand() {
-        return lastCommand;
-    }
-
-    public void setLastCommand(String lastCommand) {
-        this.lastCommand = lastCommand;
-    }
-
-    public Integer getLastListMessageId() {
-        return lastListMessageId;
-    }
-
-    public void setLastListMessageId(Integer lastListMessageId) {
-        this.lastListMessageId = lastListMessageId;
-    }
-
-    public void setLastIncomingQueryCommand(String lastIncomingQueryCommand) {
-        this.lastIncomingQueryCommand = lastIncomingQueryCommand;
-    }
-
-    public String getLastIncomingQueryCommand() {
-        return lastIncomingQueryCommand;
-    }
-
-    public boolean isVisibleCheckedMessages() {
-        return visibleCheckedMessages;
-    }
-
-    public void setVisibleCheckedMessages(boolean visibleCheckedMessages) {
-        this.visibleCheckedMessages = visibleCheckedMessages;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public void setVisibleMoreFunctions(boolean visibleMoreFunctions) {
-        this.visibleMoreFunctions = visibleMoreFunctions;
-    }
-
-    public boolean isVisibleMoreFunctions() {
-        return visibleMoreFunctions;
-    }
-
-    public boolean isManageView() {
-        return manageView;
-    }
-
-    public void setManageView(boolean manageView) {
-        this.manageView = manageView;
-    }
-
-    public ObjectId getCurrentListId() {
-        return currentListId;
-    }
-
-    public void setCurrentListId(ObjectId currentList) {
-        this.currentListId = currentList;
-    }
-
-    public ObjectId getRootListId() {
-        return rootListId;
-    }
-
-    public void setRootListId(ObjectId rootListId) {
-        this.rootListId = rootListId;
-    }
-
-    public void setLists(List<UserListHeader> lists) {
-        this.lists = lists;
-    }
-
-    public List<UserListHeader> getLists() {
-
-        return lists;
-    }
-
-    public Date getAdded() {
-        return added;
-    }
-
-    public void setAdded(Date added) {
-        this.added = added;
-    }
 }
