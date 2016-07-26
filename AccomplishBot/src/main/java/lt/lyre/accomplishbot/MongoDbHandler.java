@@ -5,13 +5,13 @@ import com.mongodb.MongoClient;
 import lt.lyre.accomplishbot.configuration.MongoDbConfig;
 import lt.lyre.accomplishbot.models.User;
 import lt.lyre.accomplishbot.models.UserList;
-import lt.lyre.accomplishbot.models.UserListItem;
 import lt.lyre.accomplishbot.utils.CollectionHelper;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.Morphia;
 import org.mongodb.morphia.query.UpdateOperations;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -77,17 +77,23 @@ public class MongoDbHandler {
     }
 
     public UserList insertListItem(ObjectId listId, List<String> items, long telegramId) {
-        UserList list = getUserListById(listId, telegramId); // For now, we wanna have UNO list
+        final List<UserList> lists = new ArrayList<>();
+        final UserList list = getUserListById(listId, telegramId); // For now, we wanna have UNO list
 
-        if (list == null) {
-            list = new UserList();
-            list.setTelegramId(telegramId);
-            list.setListName("test");
-        }
+        lists.add(list);
 
-        list.getItems().addAll(items.stream().map(item -> new UserListItem(item)).collect(Collectors.toList()));
+        lists.addAll(items
+                .stream()
+                .map(item -> {
+                    UserList child = new UserList();
+                    child.setListName(item);
+                    child.setParent(list);
+                    child.setTelegramId(telegramId);
+                    return child;
+                })
+                .collect(Collectors.toList()));
 
-        mongoDatastore.save(list);
+        mongoDatastore.save(lists);
 
         return list;
     }
@@ -119,7 +125,15 @@ public class MongoDbHandler {
                 .field("telegramId").equal(telegramId)
                 .asList();
 
-        return CollectionHelper.getGenericList(result);
+        UserList rootList = CollectionHelper.getGenericList(result);
+
+        if (rootList == null) {
+            rootList = new UserList();
+            rootList.setTelegramId(telegramId);
+            rootList.setListName("ROOT");
+        }
+
+        return rootList;
     }
 
     public List<UserList> getUserListsByTelegramId(long telegramId) {

@@ -1,7 +1,15 @@
 package lt.lyre.accomplishbot;
 
+import lt.lyre.accomplishbot.commands.BotCommands;
 import lt.lyre.accomplishbot.commands.IncomingQueryCommand;
 import lt.lyre.accomplishbot.commands.IncomingQueryType;
+import lt.lyre.accomplishbot.configuration.BotConfig;
+import lt.lyre.accomplishbot.localization.Languages;
+import lt.lyre.accomplishbot.localization.LocalizationManager;
+import lt.lyre.accomplishbot.models.User;
+import lt.lyre.accomplishbot.models.UserList;
+import lt.lyre.accomplishbot.utils.UserCommandParser;
+import lt.lyre.accomplishbot.utils.models.ParsedUserCommand;
 import org.bson.types.ObjectId;
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
@@ -18,16 +26,6 @@ import org.telegram.telegrambots.logging.BotLogger;
 import java.io.InvalidObjectException;
 import java.util.ArrayList;
 import java.util.List;
-
-import lt.lyre.accomplishbot.commands.BotCommands;
-import lt.lyre.accomplishbot.configuration.BotConfig;
-import lt.lyre.accomplishbot.localization.Languages;
-import lt.lyre.accomplishbot.localization.LocalizationManager;
-import lt.lyre.accomplishbot.models.User;
-import lt.lyre.accomplishbot.models.UserList;
-import lt.lyre.accomplishbot.models.UserListItem;
-import lt.lyre.accomplishbot.utils.UserCommandParser;
-import lt.lyre.accomplishbot.utils.models.ParsedUserCommand;
 
 import static lt.lyre.accomplishbot.commands.IncomingQueryCommand.*;
 import static lt.lyre.accomplishbot.commands.IncomingQueryType.*;
@@ -157,9 +155,8 @@ public class BotHandler extends TelegramLongPollingBot {
                 break;
 
             case INCOMING_QUERY_COMMAND_LIST_ITEMS:
-                List<UserListItem> userListItems = mongo.getUserListsByTelegramId(
-                        telegramId).stream().filter(i -> i.getId().toString().equals(item)).findFirst().get().getItems();
-
+                List<UserList> userListItems = mongo.getUserListsByTelegramId(
+                        telegramId);
                 EditMessageReplyMarkup emrm = new EditMessageReplyMarkup();
                 emrm.setChatId(message.getChatId() + "");
                 emrm.setMessageId(message.getMessageId());
@@ -211,8 +208,8 @@ public class BotHandler extends TelegramLongPollingBot {
                 return;
         }
 
-        List<UserListItem> items = mongo.getUserListById(new ObjectId(list), telegramId).getItems();
-
+        //List<UserList> items = mongo.getUserListById(new ObjectId(list), telegramId).getItems();
+        List<UserList> items = null;
         InlineKeyboardMarkup rp = makeItemList(list, items,
                 command.equals(IncomingQueryCommand.INCOMING_QUERY_COMMAND_MODIFY) || command.equals(INCOMING_QUERY_COMMAND_EDIT), mongo.getUserByTelegramId(telegramId));
         editMessageReplyMarkup(message.getChatId(), message.getMessageId(), rp);
@@ -346,15 +343,14 @@ public class BotHandler extends TelegramLongPollingBot {
         if (resultList == null || resultList.isEmpty()) {
             messageText = localizationManager.getResource("emptyListMessage", user.getLanguage());
         } else {
-            List<UserListItem> items = resultList.stream().findAny().get().getItems();
             String listId = resultList.stream().findAny().get().getId().toString();
-            rk = makeItemList(listId, items, user);
+            rk = makeItemList(listId, resultList, user);
             messageText = localizationManager.getResource("itemListMessage", user.getLanguage());
         }
 
-        if(editExisting){
+        if (editExisting) {
             editMessage(message.getChatId(), message.getMessageId(), messageText, rk);
-        }else {
+        } else {
             sendPlainMessage(message.getChatId(), messageText, rk);
         }
         user.setLastCommand(BotCommands.CMD_ADD.getCommandString());
@@ -461,29 +457,29 @@ public class BotHandler extends TelegramLongPollingBot {
         return rk;
     }
 
-    private InlineKeyboardMarkup makeItemList(String listId, List<UserListItem> items,
+    private InlineKeyboardMarkup makeItemList(String listId, List<UserList> items,
                                               User user) {
         return makeItemList(listId, items, false, user);
     }
 
-    private InlineKeyboardMarkup makeItemList(String listId, List<UserListItem> items,
+    private InlineKeyboardMarkup makeItemList(String listId, List<UserList> items,
                                               boolean editItem, User user) {
         InlineKeyboardMarkup rk = new InlineKeyboardMarkup();
 
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         List<InlineKeyboardButton> row;
         InlineKeyboardButton button;
-        for (UserListItem item : items) {
+        for (UserList item : items) {
             row = new ArrayList<>();
 
             button = new InlineKeyboardButton();
             if (editItem) {
-                button.setText("✏️ " + item.getItemName() +
+                button.setText("✏️ " + item.getListName() +
                         localizationManager.getResource("spaces", Languages.ENGLISH));
 
                 button.setCallbackData(INCOMING_QUERY_TYPE_MESSAGE.getCommandString() + INCOMING_QUERY_COMMAND_MODIFY.getCommandString() + item.getId() + "/" + listId);
             } else {
-                button.setText((item.isFinished() ? "\u2705" : "\u25AA") + item.getItemName() +
+                button.setText((item.isFinished() ? "\u2705" : "\u25AA") + item.getListName() +
                         localizationManager.getResource("spaces", Languages.ENGLISH));
 
                 button.setCallbackData(INCOMING_QUERY_TYPE_MESSAGE.getCommandString() + (item.isFinished() ? INCOMING_QUERY_COMMAND_REDO.getCommandString() : INCOMING_QUERY_COMMAND_FINISH.getCommandString()) + item.getId()

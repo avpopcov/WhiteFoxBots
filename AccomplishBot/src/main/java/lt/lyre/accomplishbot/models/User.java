@@ -25,7 +25,7 @@ public class User {
     }
 
     @Id
-    private ObjectId id;
+    private ObjectId id = new ObjectId();
 
     @Property("telegramId")
     private long telegramId;

@@ -2,10 +2,7 @@ package lt.lyre.accomplishbot.models;
 
 import lombok.Data;
 import org.bson.types.ObjectId;
-import org.mongodb.morphia.annotations.Embedded;
-import org.mongodb.morphia.annotations.Entity;
-import org.mongodb.morphia.annotations.Id;
-import org.mongodb.morphia.annotations.Property;
+import org.mongodb.morphia.annotations.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,11 +14,14 @@ import java.util.List;
 @Entity("lists")
 public class UserList {
     public UserList() {
-        items = new ArrayList<>();
+    }
+
+    public UserList(String name) {
+        listName= name;
     }
 
     @Id
-    private ObjectId id;
+    private ObjectId id = new ObjectId();
 
     @Property("telegramId")
     private long telegramId;
@@ -29,6 +29,9 @@ public class UserList {
     @Property("listName")
     private String listName;
 
-    @Embedded
-    private List<UserListItem> items;
+    @Property("isFinished")
+    private boolean isFinished;
+
+    @Reference
+    private UserList parent;
 }
