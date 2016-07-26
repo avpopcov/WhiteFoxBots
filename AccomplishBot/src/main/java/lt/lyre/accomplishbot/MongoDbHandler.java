@@ -28,28 +28,32 @@ public class MongoDbHandler {
         mongoDatastore.ensureIndexes();
     }
 
-    public boolean finishListItem(ObjectId listId, ObjectId listItemId, long telegramId) {
-        UpdateOperations<UserList> updateOperations = mongoDatastore.createUpdateOperations
-                (UserList.class).set("items.$.isFinished", true);
-
-        mongoDatastore.update(mongoDatastore.createQuery(UserList.class)
-                .filter("telegramId", telegramId)
-                .filter("_id", listId)
-                .filter("items._id", listItemId), updateOperations);
-
-        return true;
+    public void finishListItem(ObjectId listId, long telegramId) {
+        updateListState(listId, telegramId, true);
     }
 
-    public boolean redoListItem(ObjectId listId, ObjectId listItemId, long telegramId) {
-        UpdateOperations<UserList> updateOperations = mongoDatastore.createUpdateOperations
-                (UserList.class).set("items.$.isFinished", false);
+    public void redoListItem(ObjectId listId, long telegramId) {
+        updateListState(listId, telegramId, false);
+    }
 
-        mongoDatastore.update(mongoDatastore.createQuery(UserList.class)
-                .filter("telegramId", telegramId)
-                .filter("_id", listId)
-                .filter("items._id", listItemId), updateOperations);
+    private void updateListState(ObjectId listId, long telegramId, boolean isFinished) {
+        try {
+            UserList result = mongoDatastore.createQuery(UserList.class)
+                    .field("_id").equal(listId)
+                    .asList().stream().findFirst().orElse(null);
 
-        return true;
+            if (result != null) {
+                if (result.getTelegramId() != telegramId) {
+                    throw new Exception("Unauthorized list modification. This incident will be reported.");
+                }
+                result.setFinished(isFinished);
+
+                mongoDatastore.save(result);
+            }
+        }
+        catch (Exception e){
+            //TO-DO: log this
+        }
     }
 
     public void removeListItem(ObjectId listId, ObjectId listItemId, long telegramId) {

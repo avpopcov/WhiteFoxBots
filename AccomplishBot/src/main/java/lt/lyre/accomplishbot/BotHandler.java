@@ -198,10 +198,10 @@ public class BotHandler extends TelegramLongPollingBot {
 
         switch (command) {
             case INCOMING_QUERY_COMMAND_FINISH:
-                mongo.finishListItem(new ObjectId(list), new ObjectId(item), telegramId);
+                mongo.finishListItem(new ObjectId(list), telegramId);
                 break;
             case INCOMING_QUERY_COMMAND_REDO:
-                mongo.redoListItem(new ObjectId(list), new ObjectId(item), telegramId);
+                mongo.redoListItem(new ObjectId(list), telegramId);
                 break;
             case INCOMING_QUERY_COMMAND_MODIFY:
                 // TODO: Implement modify list item feature.
