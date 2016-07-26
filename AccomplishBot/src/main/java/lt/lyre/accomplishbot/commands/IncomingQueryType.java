@@ -4,7 +4,6 @@ import java.util.Arrays;
 
 public enum IncomingQueryType {
 
-    INCOMING_QUERY_TYPE_MESSAGE("message/"),
     INCOMING_QUERY_TYPE_LIST("list/"),
     INCOMING_QUERY_TYPE_LANGUAGE("language/"),
     INCOMING_QUERY_TYPE_SETTINGS("settings/");

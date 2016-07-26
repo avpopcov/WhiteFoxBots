@@ -64,25 +64,53 @@ public class MongoDbHandler {
                 .filter("_id", listId), updateOperations);
     }
 
-    public void removeList(ObjectId listId, long telegramId) {
+    public void deleteList(ObjectId listId) {
         mongoDatastore.delete(mongoDatastore.createQuery(UserList.class)
-                .filter("telegramId", telegramId)
                 .filter("_id", listId));
+    }
 
-        User user = getUserByTelegramId(telegramId);
+    public UserList insertRootList(long telegramId) {
+        UserList list = new UserList();
 
-        if (user != null) {
-            user.setCurrentList(getUserListsByTelegramId(telegramId).stream().findFirst().orElse(null));
+        list.setTelegramId(telegramId);
+        list.setListName("ROOT");
+
+        list.getItems().add(new UserListItem("Default"));
+
+        mongoDatastore.save(list);
+
+        return list;
+    }
+
+    public UserList makeNewListFromItem(ObjectId itemId, UserList parentList, long telegramId) {
+        UserList list = new UserList();
+
+
+        List<UserListItem> parentItemList = parentList.getItems();
+
+        for (UserListItem item : parentItemList) {
+            if (item.getId().equals(itemId)) {
+
+                list.setId(item.getId());
+                list.setTelegramId(telegramId);
+                list.setListName(item.getItemName());
+
+                mongoDatastore.save(list);
+
+                break;
+            }
         }
+
+        return list;
     }
 
     public UserList insertListItem(ObjectId listId, List<String> items, long telegramId) {
-        UserList list = getUserListById(listId, telegramId); // For now, we wanna have UNO list
+        UserList list = getUserListById(listId); // For now, we wanna have UNO list
 
         if (list == null) {
             list = new UserList();
             list.setTelegramId(telegramId);
-            list.setListName("test");
+            list.setListName("Default");
         }
 
         list.getItems().addAll(items.stream().map(item -> new UserListItem(item)).collect(Collectors.toList()));
@@ -93,7 +121,7 @@ public class MongoDbHandler {
     }
 
     public void setCurrentList(User user, UserList list) {
-        user.setCurrentList(list);
+        user.setCurrentListId(list.getId());
         mongoDatastore.save(user);
     }
 
@@ -113,10 +141,9 @@ public class MongoDbHandler {
         return CollectionHelper.getGenericList(result);
     }
 
-    public UserList getUserListById(ObjectId listId, long telegramId) {
+    public UserList getUserListById(ObjectId listId) {
         List<UserList> result = mongoDatastore.createQuery(UserList.class)
                 .field("_id").equal(listId)
-                .field("telegramId").equal(telegramId)
                 .asList();
 
         return CollectionHelper.getGenericList(result);

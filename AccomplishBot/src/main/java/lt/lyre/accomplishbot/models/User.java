@@ -3,12 +3,10 @@ package lt.lyre.accomplishbot.models;
 import lt.lyre.accomplishbot.commands.BotCommands;
 import lt.lyre.accomplishbot.localization.Languages;
 import org.bson.types.ObjectId;
-import org.mongodb.morphia.annotations.Entity;
-import org.mongodb.morphia.annotations.Id;
-import org.mongodb.morphia.annotations.Property;
-import org.mongodb.morphia.annotations.Reference;
+import org.mongodb.morphia.annotations.*;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by Dmitrij on 2016-06-24.
@@ -31,11 +29,26 @@ public class User {
     @Property("userName")
     private String userName;
 
+    @Property("rootListId")
+    private ObjectId rootListId;
+
+    @Property("manageView")
+    private boolean manageView;
+
+    @Property("visibleCheckedMessages")
+    private boolean visibleCheckedMessages;
+
+    @Property("visibleMoreFunctions")
+    private boolean visibleMoreFunctions;
+
     @Property("textDelimiter")
     private String delimiter;
 
     @Property("userLanguage")
     private Languages language;
+
+    @Property("firstName")
+    private String firstName;
 
     @Property("lastCommand")
     private String lastCommand;
@@ -46,11 +59,14 @@ public class User {
     @Property("lastListMessageId")
     private Integer lastListMessageId;
 
-    @Reference("currentList")
-    private UserList currentList;
+    @Property("currentListId")
+    private ObjectId currentListId;
 
     @Property("creationDate")
     private Date added;
+
+    @Embedded
+    private List<UserListHeader> lists;
 
     public ObjectId getId() {
         return id;
@@ -116,12 +132,61 @@ public class User {
         return lastIncomingQueryCommand;
     }
 
-    public UserList getCurrentList() {
-        return currentList;
+    public boolean isVisibleCheckedMessages() {
+        return visibleCheckedMessages;
     }
 
-    public void setCurrentList(UserList currentList) {
-        this.currentList = currentList;
+    public void setVisibleCheckedMessages(boolean visibleCheckedMessages) {
+        this.visibleCheckedMessages = visibleCheckedMessages;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public void setVisibleMoreFunctions(boolean visibleMoreFunctions) {
+        this.visibleMoreFunctions = visibleMoreFunctions;
+    }
+
+    public boolean isVisibleMoreFunctions() {
+        return visibleMoreFunctions;
+    }
+
+    public boolean isManageView() {
+        return manageView;
+    }
+
+    public void setManageView(boolean manageView) {
+        this.manageView = manageView;
+    }
+
+    public ObjectId getCurrentListId() {
+        return currentListId;
+    }
+
+    public void setCurrentListId(ObjectId currentList) {
+        this.currentListId = currentList;
+    }
+
+    public ObjectId getRootListId() {
+        return rootListId;
+    }
+
+    public void setRootListId(ObjectId rootListId) {
+        this.rootListId = rootListId;
+    }
+
+    public void setLists(List<UserListHeader> lists) {
+        this.lists = lists;
+    }
+
+    public List<UserListHeader> getLists() {
+
+        return lists;
     }
 
     public Date getAdded() {
