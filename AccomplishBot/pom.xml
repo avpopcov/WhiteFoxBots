@@ -59,22 +59,22 @@
 		<dependency>
 		    <groupId>commons-io</groupId>
 		    <artifactId>commons-io</artifactId>
-		    <version>2.4</version>
+		    <version>2.5</version>
 		</dependency>
         <dependency>
             <groupId>org.mongodb.morphia</groupId>
             <artifactId>morphia</artifactId>
-            <version>1.2.0</version>
+            <version>1.2.1</version>
         </dependency>
         <dependency>
             <groupId>com.github.rubenlagus</groupId>
             <artifactId>TelegramBots</artifactId>
-            <version>v2.3.3.3</version>
+            <version>v2.3.3.6</version>
         </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongo-java-driver</artifactId>
-            <version>3.2.2</version>
+            <version>3.3.0</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
