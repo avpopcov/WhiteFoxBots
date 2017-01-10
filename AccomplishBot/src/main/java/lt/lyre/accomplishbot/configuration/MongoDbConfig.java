@@ -5,7 +5,7 @@ package lt.lyre.accomplishbot.configuration;
  */
 public class MongoDbConfig {
     public static final String MAPPING_PACKAGE = "lt.lyre.accomplishbot.models";
-    public static final String DATABASE = "accomplish_bot";
+    public static final String DATABASE = "white_fox_bot";
     public static final String HOST = "localhost";
     public static final int PORT = 27017;
 }
