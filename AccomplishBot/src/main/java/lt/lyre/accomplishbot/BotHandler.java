@@ -112,7 +112,7 @@ public class BotHandler extends TelegramLongPollingBot {
 
         rk.setKeyboard(rows);
 
-        messageText = messageText.concat("Update Door State");
+        messageText = messageText.concat("Update Door State:");
 
         sendPlainMessage(message.getChatId(), messageText, rk);
     }
