@@ -1,8 +1,21 @@
 package lt.lyre.accomplishbot;
 
 import lt.lyre.accomplishbot.commands.IncomingQueryCommand;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.entity.BufferedHttpEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.bson.types.ObjectId;
+import org.json.JSONObject;
 import org.telegram.telegrambots.TelegramApiException;
+import org.telegram.telegrambots.api.methods.BotApiMethod;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageText;
@@ -11,12 +24,17 @@ import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.bots.AbsSender;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.logging.BotLogger;
 
+import java.io.IOException;
 import java.io.InvalidObjectException;
+import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import lt.lyre.accomplishbot.configuration.BotConfig;
 import lt.lyre.accomplishbot.localization.Languages;
@@ -33,6 +51,7 @@ public class BotHandler extends TelegramLongPollingBot {
 
     private LocalizationManager localizationManager;
     private MongoDbHandler mongo;
+    private volatile CloseableHttpClient httpclient;
 
     public BotHandler() {
         mongo = new MongoDbHandler();
@@ -96,7 +115,7 @@ public class BotHandler extends TelegramLongPollingBot {
 
         String messageText = "Door is ";
         button = new InlineKeyboardButton();
-        if(isClosed) {
+        if (isClosed) {
             messageText = messageText.concat("Closed. ");
             button.setText("Open");
             button.setCallbackData(INCOMING_COMMAND_OPEN.getCommandString());
@@ -115,6 +134,7 @@ public class BotHandler extends TelegramLongPollingBot {
         messageText = messageText.concat("Update Door State:");
 
         sendPlainMessage(message.getChatId(), messageText, rk);
+        preparePrivatePlainMessage(message.getChatId(), (isClosed? "The Door Wsa Closed": "The Door Was Open"), null);
     }
 
     private void showWelcomeMessage(Message message) {
@@ -176,4 +196,75 @@ public class BotHandler extends TelegramLongPollingBot {
             e.printStackTrace();
         }
     }
+
+
+    private void preparePrivatePlainMessage(Long chatId, String expression,
+                                  InlineKeyboardMarkup replyKeyboardMarkup) {
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.enableMarkdown(true);
+        sendMessage.setChatId(chatId.toString());
+        sendMessage.setReplayMarkup(replyKeyboardMarkup);
+        sendMessage.setText(expression);
+
+        try {
+            sendPrivateMessage(sendMessage);
+        } catch (TelegramApiException e) {
+            BotLogger.error(BOT_LOG_TAG, e);
+        }
+    }
+    private Message sendPrivateMessage(SendMessage sendMessage) throws TelegramApiException {
+        if(sendMessage == null) {
+            throw new TelegramApiException("Parameter sendMessage can not be null");
+        } else {
+            return (Message)this.sendApiMethod(sendMessage);
+        }
+    }
+    private <T extends Serializable> T sendApiMethod(BotApiMethod<T> method) throws TelegramApiException {
+        String responseContent;
+        try {
+
+            this.httpclient = HttpClientBuilder.create().setSSLHostnameVerifier(new NoopHostnameVerifier()).setConnectionTimeToLive(70L, TimeUnit.SECONDS).setMaxConnTotal(100).build();
+            String jsonObject = "https://api.telegram.org/bot" + "196800784:AAFYLMFGGdqzNSq6yZFwOWTarThnIbEOgaU" + "/" + "sendmessage";
+            HttpPost httppost = new HttpPost(jsonObject);
+            RequestConfig.Builder configBuilder = RequestConfig.copy(RequestConfig.custom().build());
+            httppost.setConfig(configBuilder.setSocketTimeout(75000).setConnectTimeout(75000).setConnectionRequestTimeout(75000).build());
+            httppost.addHeader("charset", StandardCharsets.UTF_8.name());
+            httppost.setEntity(new StringEntity(method.toJson().toString(), ContentType.APPLICATION_JSON));
+            CloseableHttpResponse response = this.httpclient.execute(httppost);
+            Throwable var6 = null;
+
+            try {
+                HttpEntity ht = response.getEntity();
+                BufferedHttpEntity buf = new BufferedHttpEntity(ht);
+                responseContent = EntityUtils.toString(buf, StandardCharsets.UTF_8);
+            } catch (Throwable var17) {
+                var6 = var17;
+                throw var17;
+            } finally {
+                if(response != null) {
+                    if(var6 != null) {
+                        try {
+                            response.close();
+                        } catch (Throwable var16) {
+                            var6.addSuppressed(var16);
+                        }
+                    } else {
+                        response.close();
+                    }
+                }
+
+            }
+        } catch (IOException var19) {
+            throw new TelegramApiException("Unable to execute " + method.getPath() + " method", var19);
+        }
+
+        JSONObject jsonObject1 = new JSONObject(responseContent);
+        if(!jsonObject1.getBoolean("ok")) {
+            throw new TelegramApiException("Error at " + method.getPath(), jsonObject1.getString("description"), Integer.valueOf(jsonObject1.getInt("error_code")));
+        } else {
+            return method.deserializeResponse(jsonObject1);
+        }
+    }
+
+
 }

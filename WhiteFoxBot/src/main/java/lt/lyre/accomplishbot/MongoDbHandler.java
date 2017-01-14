@@ -7,10 +7,14 @@ import lt.lyre.accomplishbot.models.User;
 import lt.lyre.accomplishbot.utils.CollectionHelper;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.Datastore;
+import org.mongodb.morphia.Key;
 import org.mongodb.morphia.Morphia;
+import org.mongodb.morphia.query.Query;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.mongodb.client.model.Aggregates.limit;
 
 /**
  * Created by Dmitrij on 2016-06-24.
@@ -61,9 +65,10 @@ public class MongoDbHandler {
     }
 
     public Door getCurrentDoorState(){
-        Door door = new Door();
+        List<Door> doorList = mongoDatastore.createQuery(Door.class).
+                order("creationDate").limit(1).asList();
 
-        return door;
+        return doorList.get(0);
     }
 
     public void setDoorState(ObjectId itemId, boolean isClosed) {

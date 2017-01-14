@@ -7,6 +7,10 @@ import lt.lyre.accomplishbot.models.Door;
 import lt.lyre.accomplishbot.models.User;
 import lt.lyre.accomplishbot.utils.UserCommandParser;
 import lt.lyre.accomplishbot.utils.models.ParsedUserCommand;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.bson.types.ObjectId;
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
@@ -21,6 +25,7 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.logging.BotLogger;
 
 import java.io.InvalidObjectException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -183,14 +188,11 @@ public class BotHandler extends TelegramLongPollingBot {
         }
     }
 
-    private void showDoorCommands(Message message, User user) {
-
-        Door door = mongo.getCurrentDoorState();
-    }
-
     private void showDoorState(Message message, User user) {
-
         Door door = mongo.getCurrentDoorState();
+
+
+        sendPlainMessage(message.getChatId(), door.isClosed()? "Closed": "Open");
     }
 
     private void showSettings(Message message, User user, boolean reply) {
