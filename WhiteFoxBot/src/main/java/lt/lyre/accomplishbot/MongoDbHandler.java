@@ -4,6 +4,7 @@ import com.mongodb.MongoClient;
 import lt.lyre.accomplishbot.configuration.MongoDbConfig;
 import lt.lyre.accomplishbot.models.Door;
 import lt.lyre.accomplishbot.models.User;
+import lt.lyre.accomplishbot.models.UserPreferences;
 import lt.lyre.accomplishbot.utils.CollectionHelper;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.Datastore;
@@ -69,14 +70,5 @@ public class MongoDbHandler {
                 order("creationDate").limit(1).asList();
 
         return doorList.get(0);
-    }
-
-    public void setDoorState(ObjectId itemId, boolean isClosed) {
-        Door door = new Door();
-
-        door.setClosed(isClosed);
-        door.setId(itemId);
-
-        mongoDatastore.save(door);
     }
 }

@@ -5,6 +5,7 @@ import lt.lyre.accomplishbot.commands.IncomingQueryCommand;
 import lt.lyre.accomplishbot.commands.IncomingQueryType;
 import lt.lyre.accomplishbot.models.Door;
 import lt.lyre.accomplishbot.models.User;
+import lt.lyre.accomplishbot.models.UserPreferences;
 import lt.lyre.accomplishbot.utils.UserCommandParser;
 import lt.lyre.accomplishbot.utils.models.ParsedUserCommand;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -164,6 +165,10 @@ public class BotHandler extends TelegramLongPollingBot {
                 showLanguageSelect(user, message, INCOMING_QUERY_TYPE_SETTINGS.getCommandString(), false);
                 break;
 
+            case INCOMING_QUERY_COMMAND_NOTIFICATION_DOOR_TOGGLE:
+                toggleNotificationsDoor(user, message, INCOMING_QUERY_TYPE_SETTINGS.getCommandString());
+                break;
+
             case INCOMING_QUERY_COMMAND_EN:
             case INCOMING_QUERY_COMMAND_RU:
             case INCOMING_QUERY_COMMAND_LT:
@@ -188,11 +193,16 @@ public class BotHandler extends TelegramLongPollingBot {
         }
     }
 
+    private void toggleNotificationsDoor(User user, Message message, String commandString) {
+        user.getUserPreferences().setShowNotificationsDoor(!user.getUserPreferences().isShowNotificationsDoor());
+        mongo.updateUser(user);
+        showSettings(message, user, true);
+    }
+
     private void showDoorState(Message message, User user) {
         Door door = mongo.getCurrentDoorState();
 
-
-        sendPlainMessage(message.getChatId(), door.isClosed()? "Closed": "Open");
+        sendPlainMessage(message.getChatId(), door.isClosed() ? "Closed" : "Open");
     }
 
     private void showSettings(Message message, User user, boolean reply) {
@@ -209,14 +219,24 @@ public class BotHandler extends TelegramLongPollingBot {
             button.setText("Add New Trusted User");
             button.setCallbackData(INCOMING_QUERY_TYPE_SETTINGS.getCommandString() + INCOMING_QUERY_COMMAND_ADD_NEW_USER.getCommandString());
             row.add(button);
+            rows.add(row);
         }
 
+        row = new ArrayList<>();
         button = new InlineKeyboardButton();
         button.setText(localizationManager.getResource("language", user.getLanguage()) +
                 " (" + localizationManager.getResource("language_short", user.getLanguage()) + ")");
         button.setCallbackData(INCOMING_QUERY_TYPE_SETTINGS.getCommandString() + INCOMING_QUERY_COMMAND_LANGUAGE.getCommandString());
         row.add(button);
 
+        button = new InlineKeyboardButton();
+        button.setText(localizationManager.getResource(
+                (user.getUserPreferences().isShowNotificationsDoor() ? "notification_door_on" : "notification_door_off"), user.getLanguage()));
+        button.setCallbackData(INCOMING_QUERY_TYPE_SETTINGS.getCommandString() + INCOMING_QUERY_COMMAND_NOTIFICATION_DOOR_TOGGLE.getCommandString());
+        row.add(button);
+        rows.add(row);
+
+        row = new ArrayList<>();
         button = new InlineKeyboardButton();
         button.setText(localizationManager.getResource("cancel", user.getLanguage()));
         button.setCallbackData(INCOMING_QUERY_TYPE_SETTINGS.getCommandString() + INCOMING_QUERY_COMMAND_CANCEL.getCommandString());
@@ -244,40 +264,43 @@ public class BotHandler extends TelegramLongPollingBot {
                 user.setFirstName(message.getFrom().getFirstName());
                 user.setLastCommand(message.getText());
 
+                user.setUserPreferences(new UserPreferences());
+
                 mongo.insertUser(user);
 
                 user = mongo.getUserByTelegramId(message.getFrom().getId());
+
+
+                ParsedUserCommand parsedUserCommand = UserCommandParser.parseUserInput(message.getText(), user);
+                BotLogger.debug(BOT_LOG_TAG, "Parsed user command: \n" + parsedUserCommand);
+                BotCommands command = BotCommands.getByCommandString(parsedUserCommand.getUserCommand());
+
+                if (command == null) {
+                    command = BotCommands.getByCommandString(user.getLastCommand());
+                }
+
+                user.setLastCommand(command.getCommandString());
+                mongo.updateUser(user);
+
+                if (command != null) {
+
+                    switch (command) {
+                        case CMD_SETTINGS:
+                            if (user.getLastIncomingQueryCommand() != null &&
+                                    user.getLastIncomingQueryCommand().equals(INCOMING_QUERY_COMMAND_ADD_NEW_USER.getCommandString())) {
+                                setNewTrustedUser(message, user);
+                            } else {
+                                showSettings(message, user, false);
+                            }
+                            break;
+                        case CMD_START:
+                            showLanguageSelect(user, message, INCOMING_QUERY_TYPE_LANGUAGE.getCommandString(), true);
+                            mongo.updateUser(user);
+                            break;
+                    }
+                }
             } else {
                 sendPlainMessage(message.getChatId(), localizationManager.getResource("access_denied", Languages.ENGLISH));
-            }
-        }
-
-        ParsedUserCommand parsedUserCommand = UserCommandParser.parseUserInput(message.getText(), user);
-        BotLogger.debug(BOT_LOG_TAG, "Parsed user command: \n" + parsedUserCommand);
-        BotCommands command = BotCommands.getByCommandString(parsedUserCommand.getUserCommand());
-
-        if (command == null) {
-            command = BotCommands.getByCommandString(user.getLastCommand());
-        }
-
-        user.setLastCommand(command.getCommandString());
-        mongo.updateUser(user);
-
-        if (command != null) {
-
-            switch (command) {
-                case CMD_SETTINGS:
-                    if (user.getLastIncomingQueryCommand() != null &&
-                            user.getLastIncomingQueryCommand().equals(INCOMING_QUERY_COMMAND_ADD_NEW_USER.getCommandString())) {
-                        setNewTrustedUser(message, user);
-                    } else {
-                        showSettings(message, user, false);
-                    }
-                    break;
-                case CMD_START:
-                    showLanguageSelect(user, message, INCOMING_QUERY_TYPE_LANGUAGE.getCommandString(), true);
-                    mongo.updateUser(user);
-                    break;
             }
         }
     }
@@ -311,14 +334,14 @@ public class BotHandler extends TelegramLongPollingBot {
                 row.add(button);
                 break;
         }
-            rows.add(row);
+        rows.add(row);
 
-            rk.setKeyboard(rows);
+        rk.setKeyboard(rows);
 
-            String messageText = "Menu";
+        String messageText = "Menu";
 
-            editMessage(message.getChatId(), message.getMessageId(), messageText, rk);
-        }
+        editMessage(message.getChatId(), message.getMessageId(), messageText, rk);
+    }
 
     private void setNewTrustedUser(User user, Message message) {
 
@@ -356,6 +379,7 @@ public class BotHandler extends TelegramLongPollingBot {
 
     private void showWelcomeMessage(User user, Message message) {
         editMessageText(message.getChatId(), message.getMessageId(), localizationManager.getResource("welcomeMessage", user.getLanguage()));
+        showMenu(message, user, INCOMING_QUERY_COMMAND_MAIN_MENU);
     }
 
     private void showLanguageSelect(User user, Message message, String callbackCommand, boolean isIntro) {

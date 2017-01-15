@@ -1,7 +1,6 @@
 package lt.lyre.accomplishbot.models;
 
 import lombok.Data;
-import lt.lyre.accomplishbot.commands.BotCommands;
 import lt.lyre.accomplishbot.localization.Languages;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.annotations.Embedded;
@@ -10,7 +9,6 @@ import org.mongodb.morphia.annotations.Id;
 import org.mongodb.morphia.annotations.Property;
 
 import java.util.Date;
-import java.util.List;
 
 /**
  * Created by Dmitrij on 2016-06-24.
@@ -22,7 +20,6 @@ public class User {
         added = new Date();
         language = Languages.ENGLISH;
         admin = false;
-        this.userPreferences = new UserPreferences();
     }
 
     public User(String userName) {

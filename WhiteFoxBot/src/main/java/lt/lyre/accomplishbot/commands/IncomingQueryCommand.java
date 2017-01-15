@@ -5,8 +5,7 @@ import java.util.Arrays;
 public enum IncomingQueryCommand {
 
     INCOMING_QUERY_COMMAND_ADD_NEW_USER("add_new_user/"),
-    INCOMING_QUERY_COMMAND_NOTIFICATION_ON("notification_on/"),
-    INCOMING_QUERY_COMMAND_NOTIFICATION_OFF("notification_off/"),
+    INCOMING_QUERY_COMMAND_NOTIFICATION_DOOR_TOGGLE("notification_door_toggle/"),
     INCOMING_QUERY_COMMAND_GET_DOOR_STATE("get_door_state/"),
     INCOMING_QUERY_COMMAND_DOOR_CONTROLS("door_controls/"),
     INCOMING_QUERY_COMMAND_MAIN_MENU("main_menu/"),
@@ -15,7 +14,11 @@ public enum IncomingQueryCommand {
     INCOMING_QUERY_COMMAND_LT("lt/"),
     INCOMING_QUERY_COMMAND_RU("ru/"),
     INCOMING_QUERY_COMMAND_EN("en/"),
-    INCOMING_QUERY_COMMAND_LANGUAGE("language/");
+    INCOMING_QUERY_COMMAND_LANGUAGE("language/"),
+
+
+
+    ;
 
     private String commandString;
 

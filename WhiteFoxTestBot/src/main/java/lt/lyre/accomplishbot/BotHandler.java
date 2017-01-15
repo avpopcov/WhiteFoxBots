@@ -1,6 +1,7 @@
 package lt.lyre.accomplishbot;
 
 import lt.lyre.accomplishbot.commands.IncomingQueryCommand;
+import lt.lyre.accomplishbot.models.User;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -134,7 +135,11 @@ public class BotHandler extends TelegramLongPollingBot {
         messageText = messageText.concat("Update Door State:");
 
         sendPlainMessage(message.getChatId(), messageText, rk);
-        preparePrivatePlainMessage(message.getChatId(), (isClosed? "The Door Wsa Closed": "The Door Was Open"), null);
+        for (User user : mongo.getOpenUsersChatId()) {
+            if (user.getUserPreferences() != null && user.getUserPreferences().isShowNotificationsDoor()) {
+                preparePrivatePlainMessage(user.getTelegramId(), (isClosed ? "The Door Wsa Closed" : "The Door Was Open"), null);
+            }
+        }
     }
 
     private void showWelcomeMessage(Message message) {
@@ -199,7 +204,7 @@ public class BotHandler extends TelegramLongPollingBot {
 
 
     private void preparePrivatePlainMessage(Long chatId, String expression,
-                                  InlineKeyboardMarkup replyKeyboardMarkup) {
+                                            InlineKeyboardMarkup replyKeyboardMarkup) {
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableMarkdown(true);
         sendMessage.setChatId(chatId.toString());
@@ -212,13 +217,15 @@ public class BotHandler extends TelegramLongPollingBot {
             BotLogger.error(BOT_LOG_TAG, e);
         }
     }
+
     private Message sendPrivateMessage(SendMessage sendMessage) throws TelegramApiException {
-        if(sendMessage == null) {
+        if (sendMessage == null) {
             throw new TelegramApiException("Parameter sendMessage can not be null");
         } else {
-            return (Message)this.sendApiMethod(sendMessage);
+            return (Message) this.sendApiMethod(sendMessage);
         }
     }
+
     private <T extends Serializable> T sendApiMethod(BotApiMethod<T> method) throws TelegramApiException {
         String responseContent;
         try {
@@ -241,8 +248,8 @@ public class BotHandler extends TelegramLongPollingBot {
                 var6 = var17;
                 throw var17;
             } finally {
-                if(response != null) {
-                    if(var6 != null) {
+                if (response != null) {
+                    if (var6 != null) {
                         try {
                             response.close();
                         } catch (Throwable var16) {
@@ -259,7 +266,7 @@ public class BotHandler extends TelegramLongPollingBot {
         }
 
         JSONObject jsonObject1 = new JSONObject(responseContent);
-        if(!jsonObject1.getBoolean("ok")) {
+        if (!jsonObject1.getBoolean("ok")) {
             throw new TelegramApiException("Error at " + method.getPath(), jsonObject1.getString("description"), Integer.valueOf(jsonObject1.getInt("error_code")));
         } else {
             return method.deserializeResponse(jsonObject1);

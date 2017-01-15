@@ -3,9 +3,13 @@ package lt.lyre.accomplishbot;
 import com.mongodb.MongoClient;
 import lt.lyre.accomplishbot.configuration.MongoDbConfig;
 import lt.lyre.accomplishbot.models.Door;
+import lt.lyre.accomplishbot.models.User;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.Morphia;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Dmitrij on 2016-06-24.
@@ -27,5 +31,12 @@ public class MongoDbHandler {
         door.setId(itemId);
 
         mongoDatastore.save(door);
+    }
+
+    public List<User> getOpenUsersChatId() {
+        List<User> result = mongoDatastore.createQuery(User.class)
+                .asList();
+
+        return result;
     }
 }
